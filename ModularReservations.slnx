@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Bootstrapper/">
+    <Project Path="src/Bootstrapper/ModularReservations.Bootstrapper/ModularReservations.Bootstrapper.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Reservations/">
+    <Project Path="src/Modules/Reservations/ModularReservations.Reservations.Api/ModularReservations.Reservations.Api.csproj" />
+    <Project Path="src/Modules/Reservations/ModularReservations.Reservations.Application/ModularReservations.Reservations.Application.csproj" />
+    <Project Path="src/Modules/Reservations/ModularReservations.Reservations.Domain/ModularReservations.Reservations.Domain.csproj" />
+    <Project Path="src/Modules/Reservations/ModularReservations.Reservations.Infrastructure/ModularReservations.Reservations.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/ModularReservations.Shared/ModularReservations.Shared.csproj" />
+  </Folder>
+</Solution>
