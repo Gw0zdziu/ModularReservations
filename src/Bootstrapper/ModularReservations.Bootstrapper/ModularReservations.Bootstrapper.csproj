@@ -10,4 +10,9 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Api\ModularReservations.Reservations.Api.csproj" />
+      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Infrastructure\ModularReservations.Reservations.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>
