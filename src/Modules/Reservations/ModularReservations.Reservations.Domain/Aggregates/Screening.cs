@@ -1,5 +1,6 @@
 using ModularReservations.Reservations.Domain.Entities;
 using ModularReservations.Reservations.Domain.Events;
+using ModularReservations.Reservations.Domain.Events.Screenings;
 using ModularReservations.Reservations.Domain.ValueObjects;
 using ModularReservations.Shared.Aggregates;
 
@@ -76,9 +77,9 @@ public class Screening : AggregateRoot
 
     }
 
-    public void ReserveSeat(Guid seatId, Guid userId, DateTime now)
+    public void ReserveSeat(Guid seatId, Guid userId, DateTime reservationDate)
     {
-        if (now >= ScreeningDate)
+        if (reservationDate >= ScreeningDate)
         {
             throw new ArgumentException($"Cannot reserve a seat for screening {Id}: it started at {ScreeningDate:yyyy-MM-dd HH:mm} UTC.");
         }
@@ -88,7 +89,7 @@ public class Screening : AggregateRoot
             throw new ArgumentException($"Seat {seatId} does not exist in the screening {Id}.");
         }
         seat.Reserve();
-        AddEvent(new SeatReservedEvent(Id, seatId, userId, now));
+        AddEvent(new SeatReservedEvent(Id, seatId, userId, reservationDate));
     }
 
     public void ReleaseSeat(Guid seatId)
