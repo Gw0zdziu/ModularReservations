@@ -73,7 +73,7 @@ flowchart LR
 A single showing of a movie at a given time. Owns its seats and guards the main invariant: **a seat can be reserved only once per screening**.
 
 - `Create(screeningDate, now, movieId, seatPositions)`: the date must be UTC and in the future, `movieId` must be set, and the seat positions must be non-empty and unique. The aggregate creates its own `Seat` entities, all free.
-- `ReserveSeat(seatId, userId, reservationDate)`: rejected once the screening has started. Raises `SeatReservedEvent`.
+- `ReserveSeat(seatId, userId, reservationDate)`: validates that the date is set and UTC, `userId` is not empty and the seat exists. Rejected once the screening has started. Raises `SeatReservedEvent`.
 - `ReleaseSeat(seatId)`: no time rule, because releasing a seat creates no obligation. Raises `SeatReleasedEvent`.
 
 The movie is referenced only by `MovieId`.
@@ -90,7 +90,7 @@ Row number and number in row, both greater than zero. Immutable record with valu
 
 The lifecycle of a single seat reservation for a user. References the screening, seat and user by id.
 
-- `Create(now, screeningId, reservationDate, seatId, userId)`: validates ids and the reservation date (UTC, not in the future). Starts as `Pending`, and the aggregate itself computes `ExpirationDate` (15 minutes after the reservation).
+- `Create(now, screeningId, reservationDate, seatId, userId)`: validates ids and the reservation date (UTC, not in the future, not older than 15 minutes, so the reservation is never created already expired). Starts as `Pending`, and the aggregate itself computes `ExpirationDate` (15 minutes after the reservation).
 - `ConfirmReservation(now)`: only from `Pending`. Raises `ReservationConfirmedEvent`.
 - `CancelReservation()`: only from `Confirmed`, i.e. the user changes their mind after paying. Raises `ReservationCancelledEvent`.
 - `ExpireReservation(now)`: only from `Pending`, after `ExpirationDate`. Raises `ReservationExpiredEvent`.
@@ -113,7 +113,7 @@ A declined payment does not cancel the reservation: the user can pay again by an
 
 | Event | Raised by | Data |
 |---|---|---|
-| `SeatReservedEvent` | `Screening.ReserveSeat` | `ScreeningId`, `SeatId`, `UserId`, `ReservedAt` |
+| `SeatReservedEvent` | `Screening.ReserveSeat` | `ScreeningId`, `SeatId`, `UserId`, `ReservationDate` |
 | `SeatReleasedEvent` | `Screening.ReleaseSeat` | `ScreeningId`, `SeatId` |
 | `ReservationConfirmedEvent` | `Reservation.ConfirmReservation` | `ScreeningId`, `SeatId`, `ReservationId` |
 | `ReservationCancelledEvent` | `Reservation.CancelReservation` | `ScreeningId`, `SeatId`, `ReservationId` |
@@ -192,4 +192,4 @@ The host currently has no module endpoints wired in.
 - What happens when a payment completes after the reservation has already expired.
 - How `Payment` allows another attempt after `PaymentDeclined`: a new `Payment` or the same aggregate returning to a waiting state.
 - Annulling a ticket after the reservation is cancelled (out of scope for now).
-- Where to validate `userId` and `reservationDate` so that a seat is never reserved without a matching reservation.
+- What releases a seat when `Screening.ReserveSeat` succeeded but `Reservation.Create` later fails for another reason, so that a seat is never reserved without a matching reservation.
