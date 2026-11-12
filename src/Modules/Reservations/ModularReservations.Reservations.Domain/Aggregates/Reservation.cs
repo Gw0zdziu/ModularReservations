@@ -32,6 +32,10 @@ public class Reservation : AggregateRoot
         {
             throw new ArgumentException("Reservation date cannot be in the future");
         }
+        if (reservationDate.AddMinutes(15) < now)
+        {
+            throw new ArgumentException("Reservation has already expired");
+        }
         if (screeningId == Guid.Empty)
         {
             throw new ArgumentException("Screening id cannot be empty");
@@ -72,7 +76,7 @@ public class Reservation : AggregateRoot
         }
     }
 
-    public void ConfirmReservation(DateTime now)
+    public void ConfirmReservation()
     {
         if (ReservationStatus != ReservationStatus.Pending)
         {
@@ -84,10 +88,11 @@ public class Reservation : AggregateRoot
 
     public  void CancelReservation()
     {
-        if (ReservationStatus == ReservationStatus.Pending)
+        if (ReservationStatus != ReservationStatus.Confirmed)
         {
-            ReservationStatus = ReservationStatus.Cancelled;
-            AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
+            throw new ArgumentException("Reservation status must be Confirmed");
         }
+        ReservationStatus = ReservationStatus.Cancelled;
+        AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
     }
 }
