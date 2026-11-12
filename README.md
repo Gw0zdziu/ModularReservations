@@ -92,7 +92,7 @@ The lifecycle of a single seat reservation for a user. References the screening,
 
 - `Create(now, screeningId, reservationDate, seatId, userId)`: validates ids and the reservation date (UTC, not in the future). Starts as `Pending`, and the aggregate itself computes `ExpirationDate` (15 minutes after the reservation).
 - `ConfirmReservation(now)`: only from `Pending`. Raises `ReservationConfirmedEvent`.
-- `CancelReservation()`: only from `Confirmed`, i.e. the user changes their mind after paying. Raises `ReservationCancelledEvent`. *(Decided; the current code still allows it only from `Pending` and is to be changed.)*
+- `CancelReservation()`: only from `Confirmed`, i.e. the user changes their mind after paying. Raises `ReservationCancelledEvent`.
 - `ExpireReservation(now)`: only from `Pending`, after `ExpirationDate`. Raises `ReservationExpiredEvent`.
 
 Every method rejects a call from any other status with an exception.
@@ -177,7 +177,7 @@ The host currently has no module endpoints wired in.
 - [x] Event Storming (events, commands, actors, policies, aggregates)
 - [x] Solution structure and layer references
 - [x] `Reservations` domain: `Screening`, `Seat`, `SeatPosition`, `Reservation`, domain events
-- [ ] `Reservation.CancelReservation()` allowed only from `Confirmed`
+- [x] `Reservation.CancelReservation()` allowed only from `Confirmed`
 - [ ] Domain exceptions instead of `ArgumentException` / `InvalidOperationException`
 - [ ] Unit tests for the domain
 - [ ] `Reservations` Application layer: commands, queries, event handlers
