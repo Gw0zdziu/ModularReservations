@@ -10,8 +10,4 @@
       <ProjectReference Include="..\..\..\Shared\ModularReservations.Shared\ModularReservations.Shared.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Events\Reservations\" />
-    </ItemGroup>
-
 </Project>
