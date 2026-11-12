@@ -1,3 +1,4 @@
+using ModularReservations.Reservations.Domain.Events.Reservations;
 using ModularReservations.Reservations.Domain.Statuses;
 using ModularReservations.Shared.Aggregates;
 
@@ -10,6 +11,7 @@ public class Reservation : AggregateRoot
     public Guid SeatId { get; private set; }
     public Guid UserId { get; private set; }
     public DateTime ReservationDate { get; private set; }
+    public DateTime ExpirationDate { get; private set; }
     public ReservationStatus ReservationStatus { get; private set; }
 
     private  Reservation()
@@ -51,8 +53,41 @@ public class Reservation : AggregateRoot
             SeatId =  seatId,
             UserId =  userId,
             ReservationDate = reservationDate,
+            ExpirationDate =  reservationDate.AddMinutes(15),
             ReservationStatus = ReservationStatus.Pending,
 
         };
+    }
+
+    public void ExpireReservation(DateTime now)
+    {
+        if (ReservationStatus != ReservationStatus.Pending)
+        {
+            throw new ArgumentException("Reservation status must be Pending");
+        }
+        if (now > ExpirationDate)
+        {
+            ReservationStatus = ReservationStatus.Expired;
+            AddEvent(new ReservationExpiredEvent(ScreeningId, SeatId, Id));
+        }
+    }
+
+    public void ConfirmReservation(DateTime now)
+    {
+        if (ReservationStatus != ReservationStatus.Pending)
+        {
+            throw new ArgumentException("Reservation status must be Pending");
+        }
+        ReservationStatus = ReservationStatus.Confirmed;
+        AddEvent(new ReservationConfirmedEvent(ScreeningId, SeatId, Id));
+    }
+
+    public  void CancelReservation()
+    {
+        if (ReservationStatus == ReservationStatus.Pending)
+        {
+            ReservationStatus = ReservationStatus.Cancelled;
+            AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
+        }
     }
 }
