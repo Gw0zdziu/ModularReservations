@@ -79,9 +79,21 @@ public class Screening : AggregateRoot
 
     public void ReserveSeat(Guid seatId, Guid userId, DateTime reservationDate)
     {
+        if (reservationDate == default)
+        {
+            throw new ArgumentNullException(nameof(reservationDate));
+        }
+        if (reservationDate.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("Given reservation date must be UTC date");
+        }
         if (reservationDate >= ScreeningDate)
         {
             throw new ArgumentException($"Cannot reserve a seat for screening {Id}: it started at {ScreeningDate:yyyy-MM-dd HH:mm} UTC.");
+        }
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException($"Cannot reserve a seat for screening {Id}: user id cannot be empty.");
         }
         var seat = _seats.FirstOrDefault(s => s.Id == seatId);
         if (seat is null)
