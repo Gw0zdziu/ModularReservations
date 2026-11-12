@@ -10,9 +10,9 @@ The domain was discovered with Event Storming. Board in Miro: [Board](https://mi
 
 The system covers the path from choosing a seat to a paid reservation and an issued ticket.
 
-**In scope:** seat reservation, reservation lifecycle (pending, confirmed, cancelled, expired), payment, ticket issuing.
+**In scope:** seat reservation, reservation lifecycle (pending, confirmed, cancelled, expired), payment, refund after cancellation, ticket issuing.
 
-**Out of scope for now** (marked cyan on the board): movie catalog and screening scheduling, user registration, notifications (confirmation email), refunds, ticket scanning and ticket cancellation. Catalog and user data are expected to be seeded.
+**Out of scope for now** (marked cyan on the board): movie catalog and screening scheduling, user registration, notifications (confirmation email), ticket scanning and ticket annulment after a cancelled reservation. Catalog and user data are expected to be seeded.
 
 ## Architecture
 
@@ -92,21 +92,22 @@ The lifecycle of a single seat reservation for a user. References the screening,
 
 - `Create(now, screeningId, reservationDate, seatId, userId)`: validates ids and the reservation date (UTC, not in the future). Starts as `Pending`, and the aggregate itself computes `ExpirationDate` (15 minutes after the reservation).
 - `ConfirmReservation(now)`: only from `Pending`. Raises `ReservationConfirmedEvent`.
-- `CancelReservation()`: only from `Pending`. Raises `ReservationCancelledEvent`.
+- `CancelReservation()`: only from `Confirmed`, i.e. the user changes their mind after paying. Raises `ReservationCancelledEvent`. *(Decided; the current code still allows it only from `Pending` and is to be changed.)*
 - `ExpireReservation(now)`: only from `Pending`, after `ExpirationDate`. Raises `ReservationExpiredEvent`.
+
+Every method rejects a call from any other status with an exception.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Pending
     Pending --> Confirmed: payment completed
-    Pending --> Cancelled: user / payment declined / payment cancelled
     Pending --> Expired: expiration date passed
-    Confirmed --> [*]
-    Cancelled --> [*]
+    Confirmed --> Cancelled: user cancels after paying
     Expired --> [*]
+    Cancelled --> [*]
 ```
 
-`Confirmed`, `Cancelled` and `Expired` are final states. `ReservationStatus` starts at `1`, so a default (`0`) value is never a valid status.
+A declined payment does not cancel the reservation: the user can pay again by another method until it expires. `Cancelled` and `Expired` are final states. `ReservationStatus` starts at `1`, so a default (`0`) value is never a valid status.
 
 ### Domain events
 
@@ -142,23 +143,21 @@ flowchart TD
     G[Background job every minute] --> H[System: Expire reservation] --> I[ReservationExpired]
     I -->|release the seat| R[System: Release seat] --> S[SeatReleased]
 
-    J[User: Cancel reservation] --> K[ReservationCancelled]
-    K -->|release the seat| R
-
     L[User: Initialize payment] --> M[PaymentInitiated]
     M --> N[System: Prepare payment]
     N --> O[PaymentCompleted]
     N --> P[PaymentDeclined]
-    Q[User: Cancel payment] --> T[PaymentCancelled]
+    P -.->|no reaction, the user can pay again| L
 
     O -->|confirm the booking| U[System: Confirm reservation] --> V[ReservationConfirmed]
-    P -->|cancel booking and release seat| W[System: Cancel reservation]
-    T -->|cancel booking and release seat| W
-    W --> K2[ReservationCancelled]
-    W --> R
-
     V -->|issue a ticket| X[System: Issue ticket] --> Y[TicketIssued]
+
+    J[User: Cancel reservation] --> K[ReservationCancelled]
+    K -->|release the seat| R
+    K -->|refund payment| Z[System: Refund payment] --> PR[PaymentRefunded]
 ```
+
+Cancelling is possible only after payment. A cancelled reservation releases the seat and refunds the payment. Annulling the already issued ticket is out of scope (cyan on the board).
 
 Actors are `User` and `System`. The payment gateway is treated as part of `System`.
 
@@ -178,6 +177,7 @@ The host currently has no module endpoints wired in.
 - [x] Event Storming (events, commands, actors, policies, aggregates)
 - [x] Solution structure and layer references
 - [x] `Reservations` domain: `Screening`, `Seat`, `SeatPosition`, `Reservation`, domain events
+- [ ] `Reservation.CancelReservation()` allowed only from `Confirmed`
 - [ ] Domain exceptions instead of `ArgumentException` / `InvalidOperationException`
 - [ ] Unit tests for the domain
 - [ ] `Reservations` Application layer: commands, queries, event handlers
@@ -189,6 +189,7 @@ The host currently has no module endpoints wired in.
 
 ### Open questions
 
-- What happens when a payment completes after the reservation has already expired or been cancelled.
-- Whether `ExpireReservation` and `ConfirmReservation` should throw or silently ignore calls on final states, consistently with `CancelReservation`.
+- What happens when a payment completes after the reservation has already expired.
+- How `Payment` allows another attempt after `PaymentDeclined`: a new `Payment` or the same aggregate returning to a waiting state.
+- Annulling a ticket after the reservation is cancelled (out of scope for now).
 - Where to validate `userId` and `reservationDate` so that a seat is never reserved without a matching reservation.
