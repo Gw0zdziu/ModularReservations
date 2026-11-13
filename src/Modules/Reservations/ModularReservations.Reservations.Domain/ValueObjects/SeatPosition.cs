@@ -1,3 +1,5 @@
+using ModularReservations.Reservations.Domain.Exceptions.Screenings;
+
 namespace ModularReservations.Reservations.Domain.ValueObjects;
 
 public record SeatPosition
@@ -9,12 +11,12 @@ public record SeatPosition
     {
         if (rowNumber <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(rowNumber));
+            throw new InvalidSeatRowNumberException(rowNumber);
         }
 
         if (numberInRow <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(numberInRow));
+            throw new InvalidSeatNumberInRowException(numberInRow);
         }
         RowNumber = rowNumber;
         NumberInRow = numberInRow;
