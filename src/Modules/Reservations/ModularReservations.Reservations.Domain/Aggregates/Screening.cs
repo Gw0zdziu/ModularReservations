@@ -1,6 +1,8 @@
 using ModularReservations.Reservations.Domain.Entities;
 using ModularReservations.Reservations.Domain.Events;
 using ModularReservations.Reservations.Domain.Events.Screenings;
+using ModularReservations.Reservations.Domain.Exceptions;
+using ModularReservations.Reservations.Domain.Exceptions.Screenings;
 using ModularReservations.Reservations.Domain.ValueObjects;
 using ModularReservations.Shared.Aggregates;
 
@@ -23,40 +25,36 @@ public class Screening : AggregateRoot
     {
         if (screeningDate == default)
         {
-            throw new ArgumentNullException(nameof(screeningDate));
+            throw new ScreeningDateRequiredException();
         }
         if (screeningDate.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("Given screening date must be UTC date");
+            throw new ScreeningDateNotUtcException(screeningDate.Kind);
         }
 
         if (screeningDate <= now)
         {
-            throw new ArgumentException("Given screening date must be in the future");
+            throw new ScreeningDateNotInFutureException(screeningDate, now);
         }
         if (movieId == Guid.Empty)
         {
-            throw new ArgumentException("Movie id must be specified");
+            throw new EmptyMovieIdException();
         }
-        if (seatPositions is null )
+        if (seatPositions is null || seatPositions.Count == 0)
         {
-            throw new ArgumentNullException(nameof(seatPositions));
-        }
-        if (seatPositions.Count == 0)
-        {
-            throw new ArgumentException("No seats have been added");
+            throw new ScreeningSeatsRequiredException();
         }
         var uniqueSeats = new HashSet<SeatPosition>();
         foreach (var seatPosition in seatPositions)
         {
             if (seatPosition is null)
             {
-                throw new ArgumentException("No seats have been added");
+                throw new ScreeningSeatsRequiredException();
             }
             var isExist = uniqueSeats.Add(seatPosition);
             if (!isExist)
             {
-                throw new ArgumentException($"Seat {seatPosition.NumberInRow} in row: {seatPosition.RowNumber} already exists");
+                throw new DuplicateSeatPositionException(seatPosition.RowNumber, seatPosition.NumberInRow);
             }
         }
 
@@ -81,24 +79,24 @@ public class Screening : AggregateRoot
     {
         if (reservationDate == default)
         {
-            throw new ArgumentNullException(nameof(reservationDate));
+            throw new ReservationDateRequiredException();
         }
         if (reservationDate.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("Given reservation date must be UTC date");
+            throw new ReservationDateNotUtcException(reservationDate.Kind);
         }
         if (reservationDate >= ScreeningDate)
         {
-            throw new ArgumentException($"Cannot reserve a seat for screening {Id}: it started at {ScreeningDate:yyyy-MM-dd HH:mm} UTC.");
+            throw new ScreeningAlreadyStartedException(Id, ScreeningDate);
         }
         if (userId == Guid.Empty)
         {
-            throw new ArgumentException($"Cannot reserve a seat for screening {Id}: user id cannot be empty.");
+            throw new EmptyUserIdException();
         }
         var seat = _seats.FirstOrDefault(s => s.Id == seatId);
         if (seat is null)
         {
-            throw new ArgumentException($"Seat {seatId} does not exist in the screening {Id}.");
+            throw new SeatNotFoundException(Id, seatId);
         }
         seat.Reserve();
         AddEvent(new SeatReservedEvent(Id, seatId, userId, reservationDate));
@@ -109,7 +107,7 @@ public class Screening : AggregateRoot
         var seat = _seats.FirstOrDefault(s => s.Id == seatId);
         if (seat is null)
         {
-            throw new ArgumentException($"Seat {seatId} does not exist in the screening {Id}.");
+            throw new SeatNotFoundException(Id, seatId);
         }
         seat.Release();
         AddEvent(new SeatReleasedEvent(Id, seatId));
