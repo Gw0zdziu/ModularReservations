@@ -1,3 +1,4 @@
+using ModularReservations.Reservations.Domain.Exceptions.Screenings;
 using ModularReservations.Reservations.Domain.ValueObjects;
 
 namespace ModularReservations.Reservations.Domain.Entities;
@@ -18,7 +19,7 @@ public class Seat
     {
         if (position == null)
         {
-            throw new ArgumentNullException(nameof(position));
+            throw new SeatPositionRequiredException();
         }
         return new Seat
         {
@@ -32,7 +33,7 @@ public class Seat
     {
         if (IsReserved)
         {
-            throw new InvalidOperationException($"The seat {Position.NumberInRow} in row {Position.RowNumber} is already reserved.");
+            throw new SeatAlreadyReservedException(Id, Position.RowNumber, Position.NumberInRow);
         };
         IsReserved = true;
     }
@@ -41,7 +42,7 @@ public class Seat
     {
         if (!IsReserved)
         {
-            throw new InvalidOperationException($"The seat {Position.NumberInRow} in row {Position.RowNumber} is already released.");
+            throw new SeatNotReservedException(Id, Position.RowNumber, Position.NumberInRow);
         }
         IsReserved = false;
     }
