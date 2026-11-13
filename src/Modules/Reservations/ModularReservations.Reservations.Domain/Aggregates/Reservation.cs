@@ -1,4 +1,6 @@
 using ModularReservations.Reservations.Domain.Events.Reservations;
+using ModularReservations.Reservations.Domain.Exceptions;
+using ModularReservations.Reservations.Domain.Exceptions.Reservations;
 using ModularReservations.Reservations.Domain.Statuses;
 using ModularReservations.Shared.Aggregates;
 
@@ -22,33 +24,33 @@ public class Reservation : AggregateRoot
     {
         if (reservationDate == default)
         {
-            throw new ArgumentNullException(nameof(reservationDate));
+            throw new ReservationDateRequiredException();
         }
         if (reservationDate.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("Given reservation date must be UTC date");
+            throw new ReservationDateNotUtcException(reservationDate.Kind);
         }
         if (reservationDate > now)
         {
-            throw new ArgumentException("Reservation date cannot be in the future");
+            throw new ReservationDateInFutureException(reservationDate, now);
         }
         if (reservationDate.AddMinutes(15) < now)
         {
-            throw new ArgumentException("Reservation has already expired");
+            throw new ReservationAlreadyExpiredException(reservationDate.AddMinutes(15));
         }
         if (screeningId == Guid.Empty)
         {
-            throw new ArgumentException("Screening id cannot be empty");
+            throw new EmptyScreeningIdException();
         }
 
         if (seatId == Guid.Empty)
         {
-            throw new ArgumentException("Seat id cannot be empty");
+            throw new EmptySeatIdException();
         }
 
         if (userId == Guid.Empty)
         {
-            throw new ArgumentException("User id cannot be empty");
+            throw new EmptyUserIdException();
         }
         return new Reservation
         {
@@ -67,7 +69,7 @@ public class Reservation : AggregateRoot
     {
         if (ReservationStatus != ReservationStatus.Pending)
         {
-            throw new ArgumentException("Reservation status must be Pending");
+            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Pending);
         }
         if (now > ExpirationDate)
         {
@@ -80,7 +82,7 @@ public class Reservation : AggregateRoot
     {
         if (ReservationStatus != ReservationStatus.Pending)
         {
-            throw new ArgumentException("Reservation status must be Pending");
+            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Pending);
         }
         ReservationStatus = ReservationStatus.Confirmed;
         AddEvent(new ReservationConfirmedEvent(ScreeningId, SeatId, Id));
@@ -90,7 +92,7 @@ public class Reservation : AggregateRoot
     {
         if (ReservationStatus != ReservationStatus.Confirmed)
         {
-            throw new ArgumentException("Reservation status must be Confirmed");
+            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Confirmed);
         }
         ReservationStatus = ReservationStatus.Cancelled;
         AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
