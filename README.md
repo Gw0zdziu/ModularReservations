@@ -40,7 +40,7 @@ ModularReservations.slnx
     │       ├── ModularReservations.Reservations.Infrastructure
     │       └── ModularReservations.Reservations.Api
     └── Shared/
-        └── ModularReservations.Shared              ← AggregateRoot, IEvent
+        └── ModularReservations.Shared              ← AggregateRoot, IEvent, DomainException
 ```
 
 Every layer of every module is a separate class library, so the compiler enforces layer boundaries. Only `Bootstrapper` is a Web API project.
@@ -95,7 +95,7 @@ The lifecycle of a single seat reservation for a user. References the screening,
 - `CancelReservation()`: only from `Confirmed`, i.e. the user changes their mind after paying. Raises `ReservationCancelledEvent`.
 - `ExpireReservation(now)`: only from `Pending`, after `ExpirationDate`. Raises `ReservationExpiredEvent`.
 
-Every method rejects a call from any other status with an exception.
+Every method rejects a call from any other status with `InvalidReservationStatusException`.
 
 ```mermaid
 stateDiagram-v2
@@ -178,7 +178,7 @@ The host currently has no module endpoints wired in.
 - [x] Solution structure and layer references
 - [x] `Reservations` domain: `Screening`, `Seat`, `SeatPosition`, `Reservation`, domain events
 - [x] `Reservation.CancelReservation()` allowed only from `Confirmed`
-- [ ] Domain exceptions instead of `ArgumentException` / `InvalidOperationException`
+- [x] Domain exceptions: abstract `DomainException` in `Shared`, sealed specific exceptions in `Reservations.Domain/Exceptions`
 - [ ] Unit tests for the domain
 - [ ] `Reservations` Application layer: commands, queries, event handlers
 - [ ] `Reservations` Infrastructure: EF Core, repositories, optimistic concurrency on aggregates
