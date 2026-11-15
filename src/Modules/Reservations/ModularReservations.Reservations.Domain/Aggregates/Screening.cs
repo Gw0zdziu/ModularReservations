@@ -21,7 +21,7 @@ public class Screening : AggregateRoot
     {
 
     }
-    public static Screening Create(DateTime screeningDate, DateTime now, Guid movieId, IReadOnlyCollection<SeatPosition> seatPositions)
+    public static Screening Create(DateTime screeningDate, DateTime now, Guid movieId, IReadOnlyCollection<SeatPosition>? seatPositions)
     {
         if (screeningDate == default)
         {
