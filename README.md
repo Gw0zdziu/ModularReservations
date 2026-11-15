@@ -179,7 +179,7 @@ The host currently has no module endpoints wired in.
 - [x] `Reservations` domain: `Screening`, `Seat`, `SeatPosition`, `Reservation`, domain events
 - [x] `Reservation.CancelReservation()` allowed only from `Confirmed`
 - [x] Domain exceptions: abstract `DomainException` in `Shared`, sealed specific exceptions in `Reservations.Domain/Exceptions`
-- [ ] Unit tests for the domain
+- [x] Unit tests for the domain
 - [ ] `Reservations` Application layer: commands, queries, event handlers
 - [ ] `Reservations` Infrastructure: EF Core, repositories, optimistic concurrency on aggregates
 - [ ] Message broker and integration events between modules
