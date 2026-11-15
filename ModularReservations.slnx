@@ -13,4 +13,9 @@
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/ModularReservations.Shared/ModularReservations.Shared.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Modules/" />
+  <Folder Name="/tests/Modules/Reservations/">
+    <Project Path="tests/Modules/Reservations/ModularReservations.Reservations.Domain.Tests/ModularReservations.Reservations.Domain.Tests.csproj" />
+  </Folder>
 </Solution>
