@@ -1,4 +1,5 @@
 using ModularReservations.Shared.Interfaces;
+using ModularReservations.Shared.Interfaces.Event;
 
 namespace ModularReservations.Reservations.Domain.Events.Reservations;
 
