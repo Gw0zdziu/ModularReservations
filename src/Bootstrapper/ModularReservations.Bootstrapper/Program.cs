@@ -1,8 +1,11 @@
-var builder = WebApplication.CreateBuilder(args);
+using ModularReservations.Shared.Infrastructure.Dispatcher;
+using ModularReservations.Shared.Interfaces.Dispatcher;
 
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IDispatcher, Dispatcher>();
 
 var app = builder.Build();
 

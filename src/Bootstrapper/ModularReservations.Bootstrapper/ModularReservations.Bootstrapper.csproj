@@ -7,12 +7,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5"/>
+      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Api\ModularReservations.Reservations.Api.csproj" />
+      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Infrastructure\ModularReservations.Reservations.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\Shared\ModularReservations.Shared.Infrastructure\ModularReservations.Shared.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Api\ModularReservations.Reservations.Api.csproj" />
-      <ProjectReference Include="..\..\Modules\Reservations\ModularReservations.Reservations.Infrastructure\ModularReservations.Reservations.Infrastructure.csproj" />
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
     </ItemGroup>
 
 </Project>
