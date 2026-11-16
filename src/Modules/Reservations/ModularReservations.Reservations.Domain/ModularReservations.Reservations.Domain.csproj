@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Shared\ModularReservations.Shared\ModularReservations.Shared.csproj" />
+      <ProjectReference Include="..\..\..\Shared\ModularReservations.Shared.Abstraction\ModularReservations.Shared.Abstraction.csproj" />
     </ItemGroup>
 
     <ItemGroup>
