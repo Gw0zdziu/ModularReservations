@@ -11,7 +11,8 @@
     <Project Path="src/Modules/Reservations/ModularReservations.Reservations.Infrastructure/ModularReservations.Reservations.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
-    <Project Path="src/Shared/ModularReservations.Shared/ModularReservations.Shared.csproj" />
+    <Project Path="src\Shared\ModularReservations.Shared.Abstraction\ModularReservations.Shared.Abstraction.csproj" />
+    <Project Path="src\Shared\ModularReservations.Shared.Infrastructure\ModularReservations.Shared.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/Modules/" />
