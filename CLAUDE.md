@@ -1,0 +1,52 @@
+# CLAUDE.md
+
+ModularReservations is a learning project: a cinema ticket reservation system in C# / .NET 10, built as a **modular monolith** with DDD, CQRS and message-based communication between modules. See `README.md` for the full domain description and roadmap.
+
+## How to work with me (read first)
+
+- **The owner writes the code.** Do not write production code, tests or fixes on your own initiative. When asked to review, evaluate only (DDD correctness, invariants, naming, boundaries). Give suggestions or implementations only when explicitly asked.
+- Answer in **Polish**, concisely and factually. Code, identifiers and commit messages stay in English.
+- If the owner is right, confirm it in one short sentence and move on. If the owner is wrong, say so directly, explain why and show the facts. Do not change your position without new evidence, and do not over-apologize.
+- Do not review things that were not asked about (e.g. unused parameters when the question is about DDD), but list them as a note when you notice them.
+- Deferred work goes to the to-do list in the Claude project (`claude/zadania-ModularReservations.md`), not just into the chat.
+
+## Commands
+
+```bash
+dotnet build ModularReservations.slnx
+dotnet run --project src/Bootstrapper/ModularReservations.Bootstrapper
+dotnet test ModularReservations.slnx      # once the tests/ projects exist
+```
+
+## Architecture
+
+- Solution file: `ModularReservations.slnx`. Sources in `src/`, tests (planned, xUnit) in `tests/`, mirroring `src/`.
+- `src/Bootstrapper`: the only Web API host. `src/Shared`: abstractions common to all modules (`AggregateRoot`, `IEvent`, `DomainException`). `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
+- Allowed references: Bootstrapper → Api, Infrastructure; Api → Application; Application → Domain; Infrastructure → Application, Domain; Domain → Shared. `Shared` references no module. Modules never reference each other; they communicate only through integration events.
+- Modules: `Reservations` (aggregates `Screening` with `Seat` entity, `Reservation`; domain implemented), `Payments` (`Payment`, planned), `Ticketing` (`Ticket`, planned). Application, Infrastructure and Api layers are still empty.
+- Event Storming board (source of truth for flows): https://miro.com/app/board/uXjVEQmpYLs=/ . Cyan stickies are out of scope.
+
+## Domain conventions
+
+- Aggregates are created only through static factory methods (`Create`) that validate every invariant. Constructors are private; setters are private; state changes only through domain methods.
+- Aggregates reference each other by `Guid` id only. One transaction changes one aggregate; aggregates are coordinated by events (eventual consistency).
+- The domain never reads the clock. Current time is passed in as `now`. All dates are `DateTime` with `Kind = Utc` (use `TimeProvider.GetUtcNow().UtcDateTime` in Application).
+- Domain events are added with `AddEvent` after a successful state change, carry data taken from the aggregate's own state, and are dispatched by the Application layer after saving, followed by `ClearEvents()`.
+- Errors are exceptions deriving from the abstract `DomainException` (in `Shared`). Each concrete exception is `sealed`, lives in `<Module>.Domain/Exceptions` (subfolders per aggregate; exceptions used by both aggregates stay in the root), exposes its data as properties and builds its own message. Do not throw `ArgumentException` or `InvalidOperationException` from the domain.
+- Repository interfaces live in `Domain`; implementations in `Infrastructure`.
+- `ReservationStatus` starts at 1; default (0) is never valid.
+
+## Decisions already made (do not reopen without a reason)
+
+- Reservation state machine: `Pending → Confirmed` (payment completed), `Pending → Expired` (after `ExpirationDate`, 15 minutes after `ReservationDate`), `Confirmed → Cancelled` (user cancels after paying). Every method rejects a call from any other status with `InvalidReservationStatusException`.
+- A declined payment does not cancel the reservation (the user can pay again until it expires). Cancelling releases the seat and refunds the payment.
+- `Reservation.Create` rejects a reservation dated in the future or already expired. `Screening.ReserveSeat` validates its own rules (date set and UTC, before the screening starts, non-empty user id, seat exists).
+- The background job runs every minute and loads only `Pending` reservations with `ExpirationDate` earlier than now.
+- Out of scope: catalog and screening scheduling, user registration, notifications, ticket scanning, ticket annulment after a cancelled reservation.
+
+## Open items
+
+- What releases a seat when `ReserveSeat` succeeded but `Reservation.Create` failed for another reason.
+- A payment that arrives after the reservation expired (`ConfirmReservation` throws, no path on the board).
+- Race between the expiring job and a payment confirming the same reservation (handle in Application with optimistic concurrency).
+- Not decided yet: how `Payment` allows another attempt after `PaymentDeclined`.
