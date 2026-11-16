@@ -1,4 +1,4 @@
-namespace ModularReservations.Shared.Interfaces;
+namespace ModularReservations.Shared.Interfaces.Command;
 
 public interface ICommandHandler<in TCommand> where TCommand : ICommand
 {

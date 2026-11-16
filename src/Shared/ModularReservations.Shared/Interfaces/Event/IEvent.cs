@@ -1,6 +1,6 @@
-namespace ModularReservations.Shared.Interfaces;
+namespace ModularReservations.Shared.Interfaces.Event;
 
-public  interface IEvent
+public interface IEvent
 {
 
 }
