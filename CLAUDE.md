@@ -15,14 +15,17 @@ ModularReservations is a learning project: a cinema ticket reservation system in
 ```bash
 dotnet build ModularReservations.slnx
 dotnet run --project src/Bootstrapper/ModularReservations.Bootstrapper
-dotnet test ModularReservations.slnx      # once the tests/ projects exist
+dotnet test ModularReservations.slnx
 ```
 
 ## Architecture
 
-- Solution file: `ModularReservations.slnx`. Sources in `src/`, tests (planned, xUnit) in `tests/`, mirroring `src/`.
-- `src/Bootstrapper`: the only Web API host. `src/Shared`: abstractions common to all modules (`AggregateRoot`, `IEvent`, `DomainException`). `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
-- Allowed references: Bootstrapper → Api, Infrastructure; Api → Application; Application → Domain; Infrastructure → Application, Domain; Domain → Shared. `Shared` references no module. Modules never reference each other; they communicate only through integration events.
+- Solution file: `ModularReservations.slnx`. Sources in `src/`, tests (xUnit) in `tests/`, mirroring `src/` (so far `Reservations.Domain.Tests`).
+- `src/Bootstrapper`: the only Web API host; registers `IDispatcher` as scoped in `Program.cs`. `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
+- `src/Shared` has two projects:
+  - `Shared.Abstraction` (root namespace `ModularReservations.Shared`, no dependencies): `AggregateRoot`, `DomainException`, `ICommand`/`ICommandHandler`, `IEvent`/`IEventHandler`, `IDispatcher`.
+  - `Shared.Infrastructure` (→ `Shared.Abstraction`, `Microsoft.Extensions.DependencyInjection.Abstractions`): `Dispatcher`. `SendAsync` resolves exactly one `ICommandHandler<T>`; `PublishAsync` resolves handlers by the event's runtime type (`@event.GetType()`), so publishing from `aggregate.Events` (`IEvent`) works, and awaits them sequentially.
+- Allowed references: Bootstrapper → Api, Infrastructure, Shared.Infrastructure; Api → Application; Application → Domain; Infrastructure → Application, Domain; Domain → Shared.Abstraction; Shared.Infrastructure → Shared.Abstraction. `Shared` references no module. Modules never reference each other; they communicate only through integration events.
 - Modules: `Reservations` (aggregates `Screening` with `Seat` entity, `Reservation`; domain implemented), `Payments` (`Payment`, planned), `Ticketing` (`Ticket`, planned). Application, Infrastructure and Api layers are still empty.
 - Event Storming board (source of truth for flows): https://miro.com/app/board/uXjVEQmpYLs=/ . Cyan stickies are out of scope.
 
