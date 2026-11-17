@@ -8,7 +8,7 @@ ModularReservations is a learning project: a cinema ticket reservation system in
 - Answer in **Polish**, concisely and factually. Code, identifiers and commit messages stay in English.
 - If the owner is right, confirm it in one short sentence and move on. If the owner is wrong, say so directly, explain why and show the facts. Do not change your position without new evidence, and do not over-apologize.
 - Do not review things that were not asked about (e.g. unused parameters when the question is about DDD), but list them as a note when you notice them.
-- Deferred work goes to the to-do list in the Claude project (`claude/zadania-ModularReservations.md`), not just into the chat.
+- Deferred work goes to the `Open items` section at the end of this file, not just into the chat.
 
 ## Commands
 
@@ -51,5 +51,12 @@ dotnet test ModularReservations.slnx
 
 - What releases a seat when `ReserveSeat` succeeded but `Reservation.Create` failed for another reason.
 - A payment that arrives after the reservation expired (`ConfirmReservation` throws, no path on the board).
-- Race between the expiring job and a payment confirming the same reservation (handle in Application with optimistic concurrency).
+- Race between the expiring job and a payment confirming the same reservation (handle in Application with optimistic concurrency): concurrency token (`rowversion`/`xmin`) configured in Infrastructure, `DbUpdateConcurrencyException` translated to an `AppException` in the repository, the job runs each `ExpireReservationCommand` in its own DI scope and skips conflicts.
 - Not decided yet: how `Payment` allows another attempt after `PaymentDeclined`.
+- Outbox + inbox: events are published after `UpdateAsync` without an outbox, so a failure after saving loses the event (e.g. `Expired` reservation whose seat is never released). Needs a unit of work (repositories must not call `SaveChanges` on their own). Inbox for idempotency, since `Seat.Release` throws on an already free seat.
+- Not decided yet: whether `ConfirmReservation` takes `now` and rejects calls after `ExpirationDate`.
+- Not decided yet: how the API returns the reservation id after `ReserveSeatCommand` (e.g. API generates `ReservationId` and passes it through the command and `SeatReservedEvent` to `Reservation.Create`).
+- Remaining handlers: `ReservationCancelledEventHandler` (release seat), `ConfirmReservationCommandHandler`, `PaymentCompleted` integration event handler (with the Payments module).
+- Tests: `ReservationTests.cs` does not compile after the `CancelReservation(userId, screeningDate, now)` signature change; add tests for owner check, screening already started, cancellation deadline (incl. `now == deadline`).
+- Infrastructure: repository implementations and registration, persistence, expiring background job (hosted service).
+- `Reservation.Create`: extract the 15-minute expiration to a constant, like `CancellationWindow`.
