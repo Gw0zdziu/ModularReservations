@@ -1,0 +1,29 @@
+using Microsoft.Extensions.DependencyInjection;
+using ModularReservations.Reservations.Application.Commands.CancelReservation;
+using ModularReservations.Reservations.Application.Commands.ConfirmReservation;
+using ModularReservations.Reservations.Application.Commands.ExpireReservation;
+using ModularReservations.Reservations.Application.Commands.ReserveSeat;
+using ModularReservations.Reservations.Application.EventHandlers.ReservationCancelled;
+using ModularReservations.Reservations.Application.EventHandlers.ReservationExpired;
+using ModularReservations.Reservations.Application.EventHandlers.SeatReserved;
+using ModularReservations.Reservations.Domain.Events.Reservations;
+using ModularReservations.Reservations.Domain.Events.Screenings;
+using ModularReservations.Shared.Interfaces.Command;
+using ModularReservations.Shared.Interfaces.Event;
+
+namespace ModularReservations.Reservations.Infrastructure;
+
+public static class Extensions
+{
+    public static IServiceCollection AddReservations(this IServiceCollection services)
+    {
+        services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
+        services.AddScoped<IEventHandler<ReservationExpiredEvent>, ReservationExpiredEventHandler>();
+        services.AddScoped<IEventHandler<ReservationCancelledEvent>, ReservationCancelledEventHandler>();
+        services.AddScoped<ICommandHandler<ConfirmReservationCommand>, ConfirmReservationCommandHandler>();
+        services.AddScoped<ICommandHandler<ReserveSeatCommand>, ReserveSeatCommandHandler>();
+        services.AddScoped<ICommandHandler<ExpireReservationCommand>, ExpireReservationCommandHandler>();
+        services.AddScoped<ICommandHandler<CancelReservationCommand>, CancelReservationCommandHandler>();
+        return services;
+    }
+}
