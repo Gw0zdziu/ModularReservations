@@ -15,6 +15,7 @@ public class Reservation : AggregateRoot
     public DateTime ReservationDate { get; private set; }
     public DateTime ExpirationDate { get; private set; }
     public ReservationStatus ReservationStatus { get; private set; }
+    private static readonly TimeSpan CancellationWindow = TimeSpan.FromMinutes(30);
 
     private  Reservation()
     {
@@ -71,11 +72,12 @@ public class Reservation : AggregateRoot
         {
             throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Pending);
         }
-        if (now > ExpirationDate)
+        if (now < ExpirationDate)
         {
-            ReservationStatus = ReservationStatus.Expired;
-            AddEvent(new ReservationExpiredEvent(ScreeningId, SeatId, Id));
+            throw new ReservationNotExpiredYetException(Id, ExpirationDate, now);
         }
+        ReservationStatus = ReservationStatus.Expired;
+        AddEvent(new ReservationExpiredEvent(ScreeningId, SeatId, Id));
     }
 
     public void ConfirmReservation()
@@ -88,11 +90,25 @@ public class Reservation : AggregateRoot
         AddEvent(new ReservationConfirmedEvent(ScreeningId, SeatId, Id));
     }
 
-    public  void CancelReservation()
+    public  void CancelReservation(Guid userId, DateTime screeningDate, DateTime now)
     {
+        if (userId != UserId)
+        {
+            throw new ReservationNotOwnedByUserException(Id, userId);
+        }
         if (ReservationStatus != ReservationStatus.Confirmed)
         {
             throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Confirmed);
+        }
+        if (now > screeningDate)
+        {
+            throw new ScreeningAlreadyStartedException(ScreeningId, screeningDate);
+        }
+
+        var cancellationDeadLine = screeningDate - CancellationWindow;
+        if (now >= cancellationDeadLine)
+        {
+            throw new CancellationDeadlinePassedException(Id, cancellationDeadLine, now);
         }
         ReservationStatus = ReservationStatus.Cancelled;
         AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
