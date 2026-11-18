@@ -10,8 +10,4 @@
       <ProjectReference Include="..\..\..\Shared\ModularReservations.Shared.Abstraction\ModularReservations.Shared.Abstraction.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Exceptions\" />
-    </ItemGroup>
-
 </Project>
