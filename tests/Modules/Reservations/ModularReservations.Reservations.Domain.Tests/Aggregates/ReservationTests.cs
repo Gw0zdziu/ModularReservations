@@ -105,7 +105,7 @@ public class ReservationTests
         var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
         Assert.Equal(result.ScreeningId, screeningId);
         Assert.Equal(ReservationStatus.Pending, result.ReservationStatus);
-        Assert.Equal(result.ReservationDate.AddMinutes(15), result.ExpirationDate);
+        Assert.Equal(reservationDate.AddMinutes(15), result.ExpirationDate);
     }
 
     #endregion
