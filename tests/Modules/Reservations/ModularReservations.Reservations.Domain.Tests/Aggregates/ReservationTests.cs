@@ -160,7 +160,7 @@ public class ReservationTests
     }
 
     [Fact]
-    public void ConfirmReservation_SuccessfullyConfirmReservation_ChangeReservationStatusOnExpired()
+    public void ConfirmReservation_SuccessfullyConfirmReservation_ChangeReservationStatusOnConfirmed()
     {
         var now = DateTime.UtcNow;
         var reservationDate = now.AddMinutes(-10);
@@ -181,27 +181,90 @@ public class ReservationTests
     {
         var now = DateTime.UtcNow;
         var reservationDate = now.AddMinutes(-10);
+        var screeningDate = DateTime.UtcNow;
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ExpireReservation(expireReservationNowDateTime);
-        var exception = result.CancelReservation;
+        var exception = () => result.CancelReservation(userId,screeningDate, now);
         Assert.Throws<InvalidReservationStatusException>(exception);
     }
 
     [Fact]
-    public void CancelReservation_SuccessfullyConfirmReservation_ChangeReservationStatusOnExpired()
+    public void CancelReservation_NowDateGreaterThanScreeningDate_ThrowsScreeningAlreadyStartedException()
     {
         var now = DateTime.UtcNow;
         var reservationDate = now.AddMinutes(-10);
+        var screeningDate = now.AddHours(-1);
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
-        result.CancelReservation();
+        var exception = () => result.CancelReservation(userId,screeningDate, now);
+        Assert.Throws<ScreeningAlreadyStartedException>(exception);
+    }
+
+    [Fact]
+    public void CancelReservation_NowAfterCancellationDeadline_ThrowsCancellationDeadlinePassedException()
+    {
+        var now = DateTime.UtcNow;
+        var reservationDate = now.AddMinutes(-10);
+        var screeningDate = now.AddMinutes(10);
+        var screeningId = Guid.NewGuid();
+        var seatId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        result.ConfirmReservation();
+        var exception = () => result.CancelReservation(userId, screeningDate, now);
+        Assert.Throws<CancellationDeadlinePassedException>(exception);
+    }
+
+    [Fact]
+    public void CancelReservation_NowEqualsCancellationDeadline_ThrowsCancellationDeadlinePassedException()
+    {
+        var now = DateTime.UtcNow;
+        var reservationDate = now.AddMinutes(-10);
+        var screeningDate = now.AddMinutes(30);
+        var screeningId = Guid.NewGuid();
+        var seatId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        result.ConfirmReservation();
+        var exception = () => result.CancelReservation(userId, screeningDate, now);
+        Assert.Throws<CancellationDeadlinePassedException>(exception);
+    }
+
+    [Fact]
+    public void CancelReservation_ReservationNotOwnedByUserId_ThrowsReservationNotOwnedByUserException()
+    {
+        var now = DateTime.UtcNow;
+        var reservationDate = now.AddMinutes(-10);
+        var screeningDate = now.AddHours(1);
+        var screeningId = Guid.NewGuid();
+        var seatId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var anotherUserId = Guid.NewGuid();
+        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        result.ConfirmReservation();
+        var exception = () => result.CancelReservation(anotherUserId, screeningDate, now);
+        Assert.Throws<ReservationNotOwnedByUserException>(exception);
+    }
+
+    [Fact]
+    public void CancelReservation_SuccessfullyConfirmReservation_ChangeReservationStatusOnCancelled()
+    {
+        var now = DateTime.UtcNow;
+        var reservationDate = now.AddMinutes(-10);
+        var screeningDate = now.AddHours(1);
+        var screeningId = Guid.NewGuid();
+        var seatId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        result.ConfirmReservation();
+        result.CancelReservation(userId, screeningDate, now);
         Assert.Equal(ReservationStatus.Cancelled, result.ReservationStatus);
     }
 
