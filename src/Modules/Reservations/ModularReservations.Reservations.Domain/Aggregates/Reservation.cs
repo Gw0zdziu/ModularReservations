@@ -16,6 +16,7 @@ public class Reservation : AggregateRoot
     public DateTime ExpirationDate { get; private set; }
     public ReservationStatus ReservationStatus { get; private set; }
     private static readonly TimeSpan CancellationWindow = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan ExpirationWindow = TimeSpan.FromMinutes(15);
 
     private  Reservation()
     {
@@ -35,9 +36,11 @@ public class Reservation : AggregateRoot
         {
             throw new ReservationDateInFutureException(reservationDate, now);
         }
-        if (reservationDate.AddMinutes(15) < now)
+
+        var expirationDeadline = reservationDate + ExpirationWindow;
+        if (expirationDeadline < now)
         {
-            throw new ReservationAlreadyExpiredException(reservationDate.AddMinutes(15));
+            throw new ReservationAlreadyExpiredException(expirationDeadline);
         }
         if (screeningId == Guid.Empty)
         {
@@ -60,7 +63,7 @@ public class Reservation : AggregateRoot
             SeatId =  seatId,
             UserId =  userId,
             ReservationDate = reservationDate,
-            ExpirationDate =  reservationDate.AddMinutes(15),
+            ExpirationDate =  expirationDeadline,
             ReservationStatus = ReservationStatus.Pending,
 
         };
