@@ -22,7 +22,7 @@ public class Reservation : AggregateRoot
     {
     }
 
-    public static Reservation Create(DateTime now, Guid screeningId, DateTime reservationDate, Guid seatId, Guid userId)
+    public static Reservation Create(Guid reservationId,DateTime now, Guid screeningId, DateTime reservationDate, Guid seatId, Guid userId)
     {
         if (reservationDate == default)
         {
@@ -42,11 +42,14 @@ public class Reservation : AggregateRoot
         {
             throw new ReservationAlreadyExpiredException(expirationDeadline);
         }
+        if (reservationId == Guid.Empty)
+        {
+            throw new EmptyReservationIdException();
+        }
         if (screeningId == Guid.Empty)
         {
             throw new EmptyScreeningIdException();
         }
-
         if (seatId == Guid.Empty)
         {
             throw new EmptySeatIdException();
@@ -58,7 +61,7 @@ public class Reservation : AggregateRoot
         }
         return new Reservation
         {
-            Id = Guid.NewGuid(),
+            Id = reservationId,
             ScreeningId =  screeningId,
             SeatId =  seatId,
             UserId =  userId,

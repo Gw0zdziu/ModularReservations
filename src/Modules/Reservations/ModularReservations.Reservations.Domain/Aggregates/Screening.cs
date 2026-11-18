@@ -2,6 +2,7 @@ using ModularReservations.Reservations.Domain.Entities;
 using ModularReservations.Reservations.Domain.Events;
 using ModularReservations.Reservations.Domain.Events.Screenings;
 using ModularReservations.Reservations.Domain.Exceptions;
+using ModularReservations.Reservations.Domain.Exceptions.Reservations;
 using ModularReservations.Reservations.Domain.Exceptions.Screenings;
 using ModularReservations.Reservations.Domain.ValueObjects;
 using ModularReservations.Shared.Aggregates;
@@ -75,7 +76,7 @@ public class Screening : AggregateRoot
 
     }
 
-    public void ReserveSeat(Guid seatId, Guid userId, DateTime reservationDate)
+    public void ReserveSeat(Guid seatId, Guid userId, DateTime reservationDate, Guid reservationId)
     {
         if (reservationDate == default)
         {
@@ -89,6 +90,10 @@ public class Screening : AggregateRoot
         {
             throw new ScreeningAlreadyStartedException(Id, ScreeningDate);
         }
+        if (reservationId == Guid.Empty)
+        {
+            throw new EmptyReservationIdException();
+        }
         if (userId == Guid.Empty)
         {
             throw new EmptyUserIdException();
@@ -99,7 +104,7 @@ public class Screening : AggregateRoot
             throw new SeatNotFoundException(Id, seatId);
         }
         seat.Reserve();
-        AddEvent(new SeatReservedEvent(Id, seatId, userId, reservationDate));
+        AddEvent(new SeatReservedEvent(Id, seatId, userId, reservationDate, reservationId));
     }
 
     public void ReleaseSeat(Guid seatId)
