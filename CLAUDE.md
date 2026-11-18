@@ -57,6 +57,5 @@ dotnet test ModularReservations.slnx
 - Not decided yet: whether `ConfirmReservation` takes `now` and rejects calls after `ExpirationDate`.
 - Not decided yet: how the API returns the reservation id after `ReserveSeatCommand` (e.g. API generates `ReservationId` and passes it through the command and `SeatReservedEvent` to `Reservation.Create`).
 - Remaining handlers: `ReservationCancelledEventHandler` (release seat), `ConfirmReservationCommandHandler`, `PaymentCompleted` integration event handler (with the Payments module).
-- Tests: `ReservationTests.cs` does not compile after the `CancelReservation(userId, screeningDate, now)` signature change; add tests for owner check, screening already started, cancellation deadline (incl. `now == deadline`).
 - Infrastructure: repository implementations and registration, persistence, expiring background job (hosted service).
 - `Reservation.Create`: extract the 15-minute expiration to a constant, like `CancellationWindow`.
