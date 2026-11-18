@@ -26,7 +26,7 @@ public class ReserveSeatCommandHandler : ICommandHandler<ReserveSeatCommand>
             throw new ScreeningNotFoundException(command.ScreeningId);
         }
         var now = _timeProvider.GetUtcNow().UtcDateTime;
-        screening.ReserveSeat(command.SeatId, command.UserId, now);
+        screening.ReserveSeat(command.SeatId, command.UserId, now, command.ReservationId);
         await _screeningRepository.UpdateAsync(screening, cancellationToken);
         foreach (var @event in screening.Events)
         {

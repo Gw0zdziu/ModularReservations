@@ -23,7 +23,7 @@ public class SeatReservedEventHandler : IEventHandler<SeatReservedEvent>
     public async Task HandleAsync(SeatReservedEvent @event, CancellationToken cancellationToken = default)
     {
         var now = _timeProvider.GetUtcNow().UtcDateTime;
-        var reservation = Reservation.Create(now, @event.ScreeningId, @event.ReservationDate, @event.SeatId, @event.UserId);
+        var reservation = Reservation.Create(@event.ReservationId, now, @event.ScreeningId, @event.ReservationDate, @event.SeatId, @event.UserId);
         await _reservationRepository.AddAsync(reservation, cancellationToken);
         foreach (var reservationEvent in reservation.Events)
         {
