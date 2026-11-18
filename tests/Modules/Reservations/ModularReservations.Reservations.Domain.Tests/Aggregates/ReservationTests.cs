@@ -18,7 +18,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<ReservationDateRequiredException>(result);
     }
 
@@ -30,7 +30,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<ReservationDateNotUtcException>(result);
     }
 
@@ -42,7 +42,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<ReservationDateInFutureException>(result);
     }
 
@@ -54,7 +54,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<ReservationAlreadyExpiredException>(result);
     }
 
@@ -66,7 +66,7 @@ public class ReservationTests
         var screeningId = Guid.Empty;
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<EmptyScreeningIdException>(result);
     }
 
@@ -78,7 +78,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.Empty;
         var userId = Guid.NewGuid();
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<EmptySeatIdException>(result);
     }
 
@@ -90,8 +90,21 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.Empty;
-        var result = () => Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = () => Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         Assert.Throws<EmptyUserIdException>(result);
+    }
+
+    [Fact]
+    public void Create_ReservationIdIsEmpty_ThrowsEmptyReservationIdException()
+    {
+        var now = DateTime.UtcNow;
+        var reservationDate = now.AddMinutes(-10);
+        var reservationId = Guid.Empty;
+        var screeningId = Guid.NewGuid();
+        var seatId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var result = () => Reservation.Create(reservationId, now, screeningId, reservationDate, seatId, userId);
+        Assert.Throws<EmptyReservationIdException>(result);
     }
 
     [Fact]
@@ -99,13 +112,15 @@ public class ReservationTests
     {
         var now = DateTime.UtcNow;
         var reservationDate = now.AddMinutes(-10);
+        var reservationId = Guid.NewGuid();
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(reservationId, now, screeningId, reservationDate, seatId, userId);
+        Assert.Equal(reservationId, result.Id);
         Assert.Equal(result.ScreeningId, screeningId);
         Assert.Equal(ReservationStatus.Pending, result.ReservationStatus);
-        Assert.Equal(reservationDate.AddMinutes(15), result.ExpirationDate);
+        Assert.Equal(reservationDate .AddMinutes(15), result.ExpirationDate);
     }
 
     #endregion
@@ -120,7 +135,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ConfirmReservation();
         var exception = () => result.ExpireReservation(expireReservationNowDateTime);
@@ -135,7 +150,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ExpireReservation(expireReservationNowDateTime);
         Assert.Equal(ReservationStatus.Expired, result.ReservationStatus);
@@ -153,7 +168,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ExpireReservation(expireReservationNowDateTime);
         var exception = result.ConfirmReservation;
@@ -168,7 +183,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         Assert.Equal(ReservationStatus.Confirmed, result.ReservationStatus);
     }
@@ -186,7 +201,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ExpireReservation(expireReservationNowDateTime);
         var exception = () => result.CancelReservation(userId,screeningDate, now);
@@ -202,7 +217,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         var exception = () => result.CancelReservation(userId,screeningDate, now);
         Assert.Throws<ScreeningAlreadyStartedException>(exception);
@@ -217,7 +232,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         var exception = () => result.CancelReservation(userId, screeningDate, now);
         Assert.Throws<CancellationDeadlinePassedException>(exception);
@@ -232,7 +247,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         var exception = () => result.CancelReservation(userId, screeningDate, now);
         Assert.Throws<CancellationDeadlinePassedException>(exception);
@@ -248,7 +263,7 @@ public class ReservationTests
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var anotherUserId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         var exception = () => result.CancelReservation(anotherUserId, screeningDate, now);
         Assert.Throws<ReservationNotOwnedByUserException>(exception);
@@ -263,7 +278,7 @@ public class ReservationTests
         var screeningId = Guid.NewGuid();
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = Reservation.Create(now, screeningId, reservationDate, seatId, userId);
+        var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         result.CancelReservation(userId, screeningDate, now);
         Assert.Equal(ReservationStatus.Cancelled, result.ReservationStatus);

@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using ModularReservations.Reservations.Domain.Aggregates;
+using ModularReservations.Reservations.Domain.Events.Screenings;
 using ModularReservations.Reservations.Domain.Exceptions;
+using ModularReservations.Reservations.Domain.Exceptions.Reservations;
 using ModularReservations.Reservations.Domain.Exceptions.Screenings;
 using ModularReservations.Reservations.Domain.ValueObjects;
 
@@ -203,7 +205,7 @@ public class ScreeningTests
         var reservationDate = default(DateTime);
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate);
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.Throws<ReservationDateRequiredException>(result);
     }
 
@@ -226,7 +228,7 @@ public class ScreeningTests
         var reservationDate = DateTime.Now;
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate);
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.Throws<ReservationDateNotUtcException>(result);
     }
 
@@ -249,7 +251,7 @@ public class ScreeningTests
         var reservationDate = screeningDate.AddMinutes(30);
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate);
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.Throws<ScreeningAlreadyStartedException>(result);
     }
 
@@ -272,8 +274,32 @@ public class ScreeningTests
         var reservationDate = screeningDate.AddHours(-1);
         var seatId = Guid.NewGuid();
         var userId = Guid.Empty;
-        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate);
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.Throws<EmptyUserIdException>(result);
+    }
+
+    [Fact]
+    public void ReserveSeat_ReservationIdEmpty_ThrowsEmptyReservationIdException()
+    {
+        var now = DateTime.UtcNow;
+        var screeningDate = now.AddHours(1);
+        var movieId = Guid.NewGuid();
+        var seatPositionsList = new List<SeatPosition>()
+        {
+            new(1, 1),
+            new(1, 2),
+            new(1, 3),
+            new(1, 4),
+
+        };
+        var seatPositions = new ReadOnlyCollection<SeatPosition>(seatPositionsList);
+        var reservation = Screening.Create(screeningDate, now, movieId, seatPositions);
+        var reservationDate = screeningDate.AddHours(-1);
+        var seatId = reservation.Seats.First().Id;
+        var userId = Guid.NewGuid();
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.Empty);
+        Assert.Throws<EmptyReservationIdException>(result);
+        Assert.False(reservation.Seats.First().IsReserved);
     }
 
     [Fact]
@@ -295,7 +321,7 @@ public class ScreeningTests
         var reservationDate = screeningDate.AddHours(-1);
         var seatId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate);
+        var result = () => reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.Throws<SeatNotFoundException>(result);
     }
 
@@ -318,8 +344,33 @@ public class ScreeningTests
         var reservationDate = screeningDate.AddHours(-1);
         var seatId = reservation.Seats.First().Id;
         var userId = Guid.NewGuid();
-        reservation.ReserveSeat(seatId, userId, reservationDate);
+        reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         Assert.True(reservation.Seats.First().IsReserved);
+    }
+
+    [Fact]
+    public void ReserveSeat_ValidParameters_AddsSeatReservedEventWithReservationId()
+    {
+        var now = DateTime.UtcNow;
+        var screeningDate = now.AddHours(1);
+        var movieId = Guid.NewGuid();
+        var seatPositionsList = new List<SeatPosition>()
+        {
+            new(1, 1),
+            new(1, 2),
+            new(1, 3),
+            new(1, 4),
+
+        };
+        var seatPositions = new ReadOnlyCollection<SeatPosition>(seatPositionsList);
+        var reservation = Screening.Create(screeningDate, now, movieId, seatPositions);
+        var reservationDate = screeningDate.AddHours(-1);
+        var seatId = reservation.Seats.First().Id;
+        var userId = Guid.NewGuid();
+        var reservationId = Guid.NewGuid();
+        reservation.ReserveSeat(seatId, userId, reservationDate, reservationId);
+        var @event = Assert.IsType<SeatReservedEvent>(Assert.Single(reservation.Events));
+        Assert.Equal(reservationId, @event.ReservationId);
     }
 
     [Fact]
@@ -342,8 +393,8 @@ public class ScreeningTests
         var seatId = reservation.Seats.First().Id;
         var firstUserId = Guid.NewGuid();
         var secondUserId = Guid.NewGuid();
-        reservation.ReserveSeat(seatId, firstUserId, reservationDate);
-        var result = () => reservation.ReserveSeat(seatId, secondUserId, reservationDate);
+        reservation.ReserveSeat(seatId, firstUserId, reservationDate, Guid.NewGuid());
+        var result = () => reservation.ReserveSeat(seatId, secondUserId, reservationDate, Guid.NewGuid());
         Assert.Throws<SeatAlreadyReservedException>(result);
     }
 
@@ -412,7 +463,7 @@ public class ScreeningTests
         var seatId = reservation.Seats.First().Id;
         var reservationDate = screeningDate.AddHours(-1);
         var userId = Guid.NewGuid();
-        reservation.ReserveSeat(seatId, userId, reservationDate);
+        reservation.ReserveSeat(seatId, userId, reservationDate, Guid.NewGuid());
         reservation.ReleaseSeat(seatId);
         Assert.False(reservation.Seats.First().IsReserved);
     }
