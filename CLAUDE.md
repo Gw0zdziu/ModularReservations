@@ -55,6 +55,6 @@ dotnet test ModularReservations.slnx
 - Not decided yet: how `Payment` allows another attempt after `PaymentDeclined`.
 - Outbox + inbox: events are published after `UpdateAsync` without an outbox, so a failure after saving loses the event (e.g. `Expired` reservation whose seat is never released). Needs a unit of work (repositories must not call `SaveChanges` on their own). Inbox for idempotency, since `Seat.Release` throws on an already free seat.
 - Not decided yet: whether `ConfirmReservation` takes `now` and rejects calls after `ExpirationDate`.
-- Not decided yet: how the API returns the reservation id after `ReserveSeatCommand` (e.g. API generates `ReservationId` and passes it through the command and `SeatReservedEvent` to `Reservation.Create`).
-- Remaining handlers: `ReservationCancelledEventHandler` (release seat), `ConfirmReservationCommandHandler`, `PaymentCompleted` integration event handler (with the Payments module).
+- Api: endpoint for `ReserveSeatCommand` generates `ReservationId` and returns it (passing it through the command, `SeatReservedEvent` and `Reservation.Create` is done).
+- Remaining handler: `PaymentCompleted` integration event handler (with the Payments module).
 - Infrastructure: repository implementations and registration, persistence, expiring background job (hosted service).
