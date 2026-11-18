@@ -3,4 +3,4 @@ using ModularReservations.Shared.Interfaces.Event;
 
 namespace ModularReservations.Reservations.Domain.Events.Screenings;
 
-public record SeatReservedEvent(Guid ScreeningId, Guid SeatId, Guid UserId, DateTime ReservationDate) :  IEvent;
+public record SeatReservedEvent(Guid ScreeningId, Guid SeatId, Guid UserId, DateTime ReservationDate, Guid ReservationId) :  IEvent;
