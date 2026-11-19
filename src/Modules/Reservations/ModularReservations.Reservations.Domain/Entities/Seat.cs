@@ -34,7 +34,7 @@ public class Seat
         if (IsReserved)
         {
             throw new SeatAlreadyReservedException(Id, Position.RowNumber, Position.NumberInRow);
-        };
+        }
         IsReserved = true;
     }
 
