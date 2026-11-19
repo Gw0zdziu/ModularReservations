@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddReservations();
+builder.Services.AddReservations(builder.Configuration);
 builder.Services.AddScoped<IDispatcher, Dispatcher>();
 
 var app = builder.Build();
