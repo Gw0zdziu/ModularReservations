@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularReservations.Reservations.Application.Commands.CancelReservation;
 using ModularReservations.Reservations.Application.Commands.ConfirmReservation;
@@ -8,6 +10,7 @@ using ModularReservations.Reservations.Application.EventHandlers.ReservationExpi
 using ModularReservations.Reservations.Application.EventHandlers.SeatReserved;
 using ModularReservations.Reservations.Domain.Events.Reservations;
 using ModularReservations.Reservations.Domain.Events.Screenings;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Event;
 
@@ -15,8 +18,13 @@ namespace ModularReservations.Reservations.Infrastructure;
 
 public static class Extensions
 {
-    public static IServiceCollection AddReservations(this IServiceCollection services)
+    public static IServiceCollection AddReservations(this IServiceCollection services, IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("Reservations")
+            ?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");
+        services.AddDbContext<ReservationsDbContext>(options => options.UseSqlServer(connectionString,
+            sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", "reservations")));
+
         services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
         services.AddScoped<IEventHandler<ReservationExpiredEvent>, ReservationExpiredEventHandler>();
         services.AddScoped<IEventHandler<ReservationCancelledEvent>, ReservationCancelledEventHandler>();
@@ -24,6 +32,7 @@ public static class Extensions
         services.AddScoped<ICommandHandler<ReserveSeatCommand>, ReserveSeatCommandHandler>();
         services.AddScoped<ICommandHandler<ExpireReservationCommand>, ExpireReservationCommandHandler>();
         services.AddScoped<ICommandHandler<CancelReservationCommand>, CancelReservationCommandHandler>();
+
         return services;
     }
 }
