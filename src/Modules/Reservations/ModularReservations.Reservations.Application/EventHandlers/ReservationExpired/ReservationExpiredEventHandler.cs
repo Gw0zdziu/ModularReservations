@@ -1,20 +1,23 @@
 using ModularReservations.Reservations.Application.Exceptions;
+using ModularReservations.Reservations.Application.Interfaces;
 using ModularReservations.Reservations.Domain.Events.Reservations;
-using ModularReservations.Reservations.Domain.Repositories;
+using ModularReservations.Reservations.Domain.Interfaces.Repositories;
 using ModularReservations.Shared.Interfaces.Dispatcher;
 using ModularReservations.Shared.Interfaces.Event;
 
 namespace ModularReservations.Reservations.Application.EventHandlers.ReservationExpired;
 
-public class ReservationExpiredEventHandler : IEventHandler<ReservationExpiredEvent>
+public sealed class ReservationExpiredEventHandler : IEventHandler<ReservationExpiredEvent>
 {
     private readonly IScreeningRepository _screeningRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IDispatcher _dispatcher;
 
-    public ReservationExpiredEventHandler(IScreeningRepository screeningRepository, IDispatcher dispatcher)
+    public ReservationExpiredEventHandler(IScreeningRepository screeningRepository, IDispatcher dispatcher, IUnitOfWork unitOfWork)
     {
         _screeningRepository = screeningRepository;
         _dispatcher = dispatcher;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task HandleAsync(ReservationExpiredEvent @event, CancellationToken cancellationToken = default)
@@ -25,7 +28,8 @@ public class ReservationExpiredEventHandler : IEventHandler<ReservationExpiredEv
             throw new ScreeningNotFoundException(@event.ScreeningId);
         }
         screening.ReleaseSeat(@event.SeatId);
-        await _screeningRepository.UpdateAsync(screening, cancellationToken);
+        _screeningRepository.Update(screening);
+        await _unitOfWork.CommitAsync(cancellationToken);
         foreach (var screeningEvent in screening.Events)
         {
             await _dispatcher.PublishAsync(screeningEvent, cancellationToken);
