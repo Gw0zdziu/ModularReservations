@@ -1,24 +1,27 @@
 using ModularReservations.Reservations.Application.Exceptions;
-using ModularReservations.Reservations.Domain.Repositories;
+using ModularReservations.Reservations.Application.Interfaces;
+using ModularReservations.Reservations.Domain.Interfaces.Repositories;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Dispatcher;
 
 namespace ModularReservations.Reservations.Application.Commands.CancelReservation;
 
-public class CancelReservationCommandHandler : ICommandHandler<CancelReservationCommand>
+public sealed class CancelReservationCommandHandler : ICommandHandler<CancelReservationCommand>
 {
     private readonly IReservationRepository _reservationRepository;
     private readonly IScreeningRepository _screeningRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IDispatcher _dispatcher;
     private readonly TimeProvider _timeProvider;
 
 
-    public CancelReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher, IScreeningRepository screeningRepository, TimeProvider timeProvider)
+    public CancelReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher, IScreeningRepository screeningRepository, TimeProvider timeProvider, IUnitOfWork unitOfWork)
     {
         _reservationRepository = reservationRepository;
         _dispatcher = dispatcher;
         _screeningRepository = screeningRepository;
         _timeProvider = timeProvider;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task HandleAsync(CancelReservationCommand command, CancellationToken cancellationToken = default)
@@ -35,7 +38,8 @@ public class CancelReservationCommandHandler : ICommandHandler<CancelReservation
         }
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         reservation.CancelReservation(command.UserId, screening.ScreeningDate, now);
-        await _reservationRepository.UpdateAsync(reservation, cancellationToken);
+        _reservationRepository.Update(reservation);
+        await _unitOfWork.CommitAsync(cancellationToken);
         foreach (var @event in reservation.Events)
         {
             await _dispatcher.PublishAsync(@event, cancellationToken);

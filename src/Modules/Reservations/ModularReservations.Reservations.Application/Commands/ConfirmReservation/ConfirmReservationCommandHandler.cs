@@ -1,19 +1,22 @@
 using ModularReservations.Reservations.Application.Exceptions;
-using ModularReservations.Reservations.Domain.Repositories;
+using ModularReservations.Reservations.Application.Interfaces;
+using ModularReservations.Reservations.Domain.Interfaces.Repositories;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Dispatcher;
 
 namespace ModularReservations.Reservations.Application.Commands.ConfirmReservation;
 
-public class ConfirmReservationCommandHandler : ICommandHandler<ConfirmReservationCommand>
+public sealed class ConfirmReservationCommandHandler : ICommandHandler<ConfirmReservationCommand>
 {
     private readonly IReservationRepository _reservationRepository;
-    private readonly  IDispatcher _dispatcher;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDispatcher _dispatcher;
 
-    public ConfirmReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher)
+    public ConfirmReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher, IUnitOfWork unitOfWork)
     {
         _reservationRepository = reservationRepository;
         _dispatcher = dispatcher;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task HandleAsync(ConfirmReservationCommand command, CancellationToken cancellationToken = default)
@@ -24,7 +27,8 @@ public class ConfirmReservationCommandHandler : ICommandHandler<ConfirmReservati
             throw new ReservationNotFoundException(command.ReservationId);
         }
         reservation.ConfirmReservation();
-        await _reservationRepository.UpdateAsync(reservation, cancellationToken);
+        _reservationRepository.Update(reservation);
+        await _unitOfWork.CommitAsync(cancellationToken);
         foreach (var @event in reservation.Events)
         {
             await _dispatcher.PublishAsync(@event, cancellationToken);

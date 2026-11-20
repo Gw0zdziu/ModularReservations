@@ -1,21 +1,24 @@
 using ModularReservations.Reservations.Application.Exceptions;
-using ModularReservations.Reservations.Domain.Repositories;
+using ModularReservations.Reservations.Application.Interfaces;
+using ModularReservations.Reservations.Domain.Interfaces.Repositories;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Dispatcher;
 
 namespace ModularReservations.Reservations.Application.Commands.ExpireReservation;
 
-public class ExpireReservationCommandHandler : ICommandHandler<ExpireReservationCommand>
+public sealed class ExpireReservationCommandHandler : ICommandHandler<ExpireReservationCommand>
 {
     private readonly IReservationRepository _reservationRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IDispatcher _dispatcher;
     private readonly TimeProvider _timeProvider;
 
-    public ExpireReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher, TimeProvider timeProvider)
+    public ExpireReservationCommandHandler(IReservationRepository reservationRepository, IDispatcher dispatcher, TimeProvider timeProvider, IUnitOfWork unitOfWork)
     {
         _reservationRepository = reservationRepository;
         _dispatcher = dispatcher;
         _timeProvider = timeProvider;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task HandleAsync(ExpireReservationCommand command, CancellationToken cancellationToken = default)
@@ -27,7 +30,8 @@ public class ExpireReservationCommandHandler : ICommandHandler<ExpireReservation
         }
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         reservation.ExpireReservation(now);
-        await _reservationRepository.UpdateAsync(reservation, cancellationToken);
+        _reservationRepository.Update(reservation);
+        await _unitOfWork.CommitAsync(cancellationToken);
         foreach (var @event in reservation.Events)
         {
             await _dispatcher.PublishAsync(@event, cancellationToken);
