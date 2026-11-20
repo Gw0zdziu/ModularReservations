@@ -8,9 +8,12 @@ using ModularReservations.Reservations.Application.Commands.ReserveSeat;
 using ModularReservations.Reservations.Application.EventHandlers.ReservationCancelled;
 using ModularReservations.Reservations.Application.EventHandlers.ReservationExpired;
 using ModularReservations.Reservations.Application.EventHandlers.SeatReserved;
+using ModularReservations.Reservations.Application.Interfaces;
 using ModularReservations.Reservations.Domain.Events.Reservations;
 using ModularReservations.Reservations.Domain.Events.Screenings;
-using ModularReservations.Reservations.Infrastructure.DbContextReservations;
+using ModularReservations.Reservations.Domain.Interfaces.Repositories;
+using ModularReservations.Reservations.Infrastructure.Persistence;
+using ModularReservations.Reservations.Infrastructure.Repositories;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Event;
 
@@ -22,7 +25,7 @@ public static class Extensions
     {
         var connectionString = configuration.GetConnectionString("Reservations")
             ?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");
-        services.AddDbContext<ReservationsDbContext>(options => options.UseSqlServer(connectionString,
+        services.AddDbContext<ReservationsDbContext.ReservationsDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", "reservations")));
 
         services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
@@ -32,7 +35,9 @@ public static class Extensions
         services.AddScoped<ICommandHandler<ReserveSeatCommand>, ReserveSeatCommandHandler>();
         services.AddScoped<ICommandHandler<ExpireReservationCommand>, ExpireReservationCommandHandler>();
         services.AddScoped<ICommandHandler<CancelReservationCommand>, CancelReservationCommandHandler>();
-
+        services.AddScoped<IReservationRepository, ReservationRepository>();
+        services.AddScoped<IScreeningRepository, ScreeningRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         return services;
     }
 }
