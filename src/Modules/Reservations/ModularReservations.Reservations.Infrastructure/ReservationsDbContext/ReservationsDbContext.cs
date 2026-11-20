@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using ModularReservations.Reservations.Domain.Aggregates;
 
-namespace ModularReservations.Reservations.Infrastructure.DbContextReservations;
+namespace ModularReservations.Reservations.Infrastructure.ReservationsDbContext;
 
-public class ReservationsDbContext : Microsoft.EntityFrameworkCore.DbContext
+public class ReservationsDbContext : DbContext
 {
     public ReservationsDbContext(DbContextOptions<ReservationsDbContext> options) : base(options)
     {
