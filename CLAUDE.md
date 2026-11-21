@@ -58,3 +58,4 @@ dotnet test ModularReservations.slnx
 - Api: endpoint for `ReserveSeatCommand` generates `ReservationId` and returns it (passing it through the command, `SeatReservedEvent` and `Reservation.Create` is done).
 - Remaining handler: `PaymentCompleted` integration event handler (with the Payments module).
 - Infrastructure: repository implementations and registration, persistence, expiring background job (hosted service).
+- Api: `UserId` comes from the request body for now (anyone can act on another user's reservation); take it from the token claims once auth exists.
