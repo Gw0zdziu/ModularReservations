@@ -1,3 +1,4 @@
+using ModularReservations.Reservations.Api.Controllers;
 using ModularReservations.Reservations.Infrastructure;
 using ModularReservations.Shared.Infrastructure.Dispatcher;
 using ModularReservations.Shared.Interfaces.Dispatcher;
@@ -9,7 +10,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddReservations(builder.Configuration);
 builder.Services.AddScoped<IDispatcher, Dispatcher>();
-
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(ReservationsController).Assembly);
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
