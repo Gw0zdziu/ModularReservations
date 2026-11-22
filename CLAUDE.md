@@ -21,12 +21,17 @@ dotnet test ModularReservations.slnx
 ## Architecture
 
 - Solution file: `ModularReservations.slnx`. Sources in `src/`, tests (xUnit) in `tests/`, mirroring `src/` (so far `Reservations.Domain.Tests`).
-- `src/Bootstrapper`: the only Web API host; registers `IDispatcher` as scoped in `Program.cs`. `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
+- `src/Bootstrapper`: the only Web API host. `Program.cs` registers `TimeProvider.System` (singleton), `IDispatcher` (scoped), controllers (with the module's Api assembly as an application part) and each module through its `Add<Module>(configuration)` extension. Connection strings live in user secrets of the Bootstrapper (`ConnectionStrings:<Module>`). `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
 - `src/Shared` has two projects:
-  - `Shared.Abstraction` (root namespace `ModularReservations.Shared`, no dependencies): `AggregateRoot`, `DomainException`, `ICommand`/`ICommandHandler`, `IEvent`/`IEventHandler`, `IDispatcher`.
+  - `Shared.Abstraction` (root namespace `ModularReservations.Shared`, no dependencies): `AggregateRoot`, `DomainException`, `AppException`, `ICommand`/`ICommandHandler`, `IEvent`/`IEventHandler`, `IDispatcher`.
   - `Shared.Infrastructure` (→ `Shared.Abstraction`, `Microsoft.Extensions.DependencyInjection.Abstractions`): `Dispatcher`. `SendAsync` resolves exactly one `ICommandHandler<T>`; `PublishAsync` resolves handlers by the event's runtime type (`@event.GetType()`), so publishing from `aggregate.Events` (`IEvent`) works, and awaits them sequentially.
 - Allowed references: Bootstrapper → Api, Infrastructure, Shared.Infrastructure; Api → Application; Application → Domain; Infrastructure → Application, Domain; Domain → Shared.Abstraction; Shared.Infrastructure → Shared.Abstraction. `Shared` references no module. Modules never reference each other; they communicate only through integration events.
-- Modules: `Reservations` (aggregates `Screening` with `Seat` entity, `Reservation`; domain implemented), `Payments` (`Payment`, planned), `Ticketing` (`Ticket`, planned). Application, Infrastructure and Api layers are still empty.
+- Modules: `Reservations` (implemented), `Payments` (`Payment`, planned), `Ticketing` (`Ticket`, planned).
+- `Reservations` layers:
+  - `Domain`: aggregates `Screening` (with `Seat` entity) and `Reservation`, domain events, exceptions, repository interfaces.
+  - `Application`: command handlers (`ReserveSeat`, `ConfirmReservation`, `ExpireReservation`, `CancelReservation`), domain event handlers (`SeatReserved`, `ReservationExpired`, `ReservationCancelled`), `AppException`s (`ReservationNotFound`, `ScreeningNotFound`), `IUnitOfWork`.
+  - `Infrastructure`: `ReservationsDbContext` on SQL Server (schema `reservations`, own migrations history table), entity configurations, migrations, repositories, `UnitOfWork` (the only place that calls `SaveChangesAsync`), `ExpireReservationJob` (`BackgroundService`, every minute, own DI scope per command), registration in `Extensions.AddReservations`.
+  - `Api`: `ReservationsController` (`POST api/reservations` reserves a seat and returns the generated `ReservationId`, `PUT api/reservations/cancel`).
 - Event Storming board (source of truth for flows): https://miro.com/app/board/uXjVEQmpYLs=/ . Cyan stickies are out of scope.
 
 ## Domain conventions
@@ -51,11 +56,9 @@ dotnet test ModularReservations.slnx
 
 - What releases a seat when `ReserveSeat` succeeded but `Reservation.Create` failed for another reason.
 - A payment that arrives after the reservation expired (`ConfirmReservation` throws, no path on the board).
-- Race between the expiring job and a payment confirming the same reservation (handle in Application with optimistic concurrency): concurrency token (`rowversion`/`xmin`) configured in Infrastructure, `DbUpdateConcurrencyException` translated to an `AppException` in the repository, the job runs each `ExpireReservationCommand` in its own DI scope and skips conflicts.
+- Race between the expiring job and a payment confirming the same reservation (optimistic concurrency): the job is done (own DI scope per `ExpireReservationCommand`, `AppException`/`DomainException` logged as warning and skipped). Remaining: `rowversion` concurrency token on `Reservation` (only `Seat.IsReserved` has one now) and translating `DbUpdateConcurrencyException` to an `AppException` in `UnitOfWork` (the only place that calls `SaveChangesAsync`). Until then a conflict is logged as an error, not skipped as a warning.
 - Not decided yet: how `Payment` allows another attempt after `PaymentDeclined`.
-- Outbox + inbox: events are published after `UpdateAsync` without an outbox, so a failure after saving loses the event (e.g. `Expired` reservation whose seat is never released). Needs a unit of work (repositories must not call `SaveChanges` on their own). Inbox for idempotency, since `Seat.Release` throws on an already free seat.
+- Outbox + inbox: events are published after saving without an outbox, so a failure after saving loses the event (e.g. `Expired` reservation whose seat is never released). `UnitOfWork` exists and repositories do not call `SaveChanges`. Inbox for idempotency, since `Seat.Release` throws on an already free seat.
 - Not decided yet: whether `ConfirmReservation` takes `now` and rejects calls after `ExpirationDate`.
-- Api: endpoint for `ReserveSeatCommand` generates `ReservationId` and returns it (passing it through the command, `SeatReservedEvent` and `Reservation.Create` is done).
 - Remaining handler: `PaymentCompleted` integration event handler (with the Payments module).
-- Infrastructure: repository implementations and registration, persistence, expiring background job (hosted service).
 - Api: `UserId` comes from the request body for now (anyone can act on another user's reservation); take it from the token claims once auth exists.
