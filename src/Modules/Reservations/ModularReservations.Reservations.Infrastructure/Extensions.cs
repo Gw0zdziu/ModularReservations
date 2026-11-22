@@ -12,6 +12,7 @@ using ModularReservations.Reservations.Application.Interfaces;
 using ModularReservations.Reservations.Domain.Events.Reservations;
 using ModularReservations.Reservations.Domain.Events.Screenings;
 using ModularReservations.Reservations.Domain.Interfaces.Repositories;
+using ModularReservations.Reservations.Infrastructure.Jobs;
 using ModularReservations.Reservations.Infrastructure.Persistence;
 using ModularReservations.Reservations.Infrastructure.Repositories;
 using ModularReservations.Shared.Interfaces.Command;
@@ -23,11 +24,10 @@ public static class Extensions
 {
     public static IServiceCollection AddReservations(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Reservations")
-            ?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");
+        var connectionString = configuration.GetConnectionString("Reservations");
+            /*?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");*/
         services.AddDbContext<ReservationsDbContext.ReservationsDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", "reservations")));
-
         services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
         services.AddScoped<IEventHandler<ReservationExpiredEvent>, ReservationExpiredEventHandler>();
         services.AddScoped<IEventHandler<ReservationCancelledEvent>, ReservationCancelledEventHandler>();
@@ -38,6 +38,7 @@ public static class Extensions
         services.AddScoped<IReservationRepository, ReservationRepository>();
         services.AddScoped<IScreeningRepository, ScreeningRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddHostedService<ExpireReservationJob>();
         return services;
     }
 }
