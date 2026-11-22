@@ -35,6 +35,7 @@ public class ReservationRepository : IReservationRepository
     public async Task<IReadOnlyList<Reservation>> GetExpiredPendingAsync(DateTime now, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Reservations
+            .AsNoTracking()
             .Where(x => x.ExpirationDate < now && x.ReservationStatus == ReservationStatus.Pending)
             .ToListAsync(cancellationToken);
     }
