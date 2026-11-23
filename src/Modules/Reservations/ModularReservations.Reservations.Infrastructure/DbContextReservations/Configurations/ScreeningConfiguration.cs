@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ModularReservations.Reservations.Domain.Aggregates;
-using ModularReservations.Reservations.Infrastructure.ReservationsDbContext.Converts;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations.Converts;
 
-namespace ModularReservations.Reservations.Infrastructure.ReservationsDbContext.Configurations;
+namespace ModularReservations.Reservations.Infrastructure.DbContextReservations.Configurations;
 
 public class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
 {

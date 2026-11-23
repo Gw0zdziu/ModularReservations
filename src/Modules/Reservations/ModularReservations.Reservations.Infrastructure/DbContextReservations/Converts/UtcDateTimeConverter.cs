@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace ModularReservations.Reservations.Infrastructure.ReservationsDbContext.Converts;
+namespace ModularReservations.Reservations.Infrastructure.DbContextReservations.Converts;
 
 public sealed class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
 {

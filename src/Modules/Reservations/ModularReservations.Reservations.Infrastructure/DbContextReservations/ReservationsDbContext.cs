@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ModularReservations.Reservations.Domain.Aggregates;
 
-namespace ModularReservations.Reservations.Infrastructure.ReservationsDbContext;
+namespace ModularReservations.Reservations.Infrastructure.DbContextReservations;
 
 public class ReservationsDbContext : DbContext
 {

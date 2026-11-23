@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ModularReservations.Reservations.Domain.Aggregates;
-using ModularReservations.Reservations.Infrastructure.ReservationsDbContext.Converts;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations.Converts;
 
-namespace ModularReservations.Reservations.Infrastructure.ReservationsDbContext.Configurations;
+namespace ModularReservations.Reservations.Infrastructure.DbContextReservations.Configurations;
 
 public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
 {
@@ -19,9 +19,10 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
             .HasConversion<UtcDateTimeConverter>();
         builder.Property(x => x.ReservationDate)
             .HasConversion<UtcDateTimeConverter>();
-        builder.Property(x => x.ReservationStatus)
+        builder.Property(x => x.Status)
             .HasMaxLength(20)
-            .HasConversion<string>();
+            .HasConversion<string>()
+            .IsConcurrencyToken();
 
     }
 }
