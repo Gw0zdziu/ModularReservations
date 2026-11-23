@@ -119,7 +119,7 @@ public class ReservationTests
         var result = Reservation.Create(reservationId, now, screeningId, reservationDate, seatId, userId);
         Assert.Equal(reservationId, result.Id);
         Assert.Equal(result.ScreeningId, screeningId);
-        Assert.Equal(ReservationStatus.Pending, result.ReservationStatus);
+        Assert.Equal(ReservationStatus.Pending, result.Status);
         Assert.Equal(reservationDate .AddMinutes(15), result.ExpirationDate);
     }
 
@@ -153,7 +153,7 @@ public class ReservationTests
         var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         var expireReservationNowDateTime = now.AddHours(1);
         result.ExpireReservation(expireReservationNowDateTime);
-        Assert.Equal(ReservationStatus.Expired, result.ReservationStatus);
+        Assert.Equal(ReservationStatus.Expired, result.Status);
     }
 
     #endregion
@@ -185,7 +185,7 @@ public class ReservationTests
         var userId = Guid.NewGuid();
         var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
-        Assert.Equal(ReservationStatus.Confirmed, result.ReservationStatus);
+        Assert.Equal(ReservationStatus.Confirmed, result.Status);
     }
 
     #endregion
@@ -281,7 +281,7 @@ public class ReservationTests
         var result = Reservation.Create(Guid.NewGuid(), now, screeningId, reservationDate, seatId, userId);
         result.ConfirmReservation();
         result.CancelReservation(userId, screeningDate, now);
-        Assert.Equal(ReservationStatus.Cancelled, result.ReservationStatus);
+        Assert.Equal(ReservationStatus.Cancelled, result.Status);
     }
 
     #endregion
