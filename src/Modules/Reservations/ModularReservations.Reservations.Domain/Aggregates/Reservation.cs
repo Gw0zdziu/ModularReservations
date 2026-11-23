@@ -14,7 +14,7 @@ public class Reservation : AggregateRoot
     public Guid UserId { get; private set; }
     public DateTime ReservationDate { get; private set; }
     public DateTime ExpirationDate { get; private set; }
-    public ReservationStatus ReservationStatus { get; private set; }
+    public ReservationStatus Status { get; private set; }
     private static readonly TimeSpan CancellationWindow = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan ExpirationWindow = TimeSpan.FromMinutes(15);
 
@@ -67,32 +67,32 @@ public class Reservation : AggregateRoot
             UserId =  userId,
             ReservationDate = reservationDate,
             ExpirationDate =  expirationDeadline,
-            ReservationStatus = ReservationStatus.Pending,
+            Status = ReservationStatus.Pending,
 
         };
     }
 
     public void ExpireReservation(DateTime now)
     {
-        if (ReservationStatus != ReservationStatus.Pending)
+        if (Status != ReservationStatus.Pending)
         {
-            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Pending);
+            throw new InvalidReservationStatusException(Id, Status, ReservationStatus.Pending);
         }
         if (now < ExpirationDate)
         {
             throw new ReservationNotExpiredYetException(Id, ExpirationDate, now);
         }
-        ReservationStatus = ReservationStatus.Expired;
+        Status = ReservationStatus.Expired;
         AddEvent(new ReservationExpiredEvent(ScreeningId, SeatId, Id));
     }
 
     public void ConfirmReservation()
     {
-        if (ReservationStatus != ReservationStatus.Pending)
+        if (Status != ReservationStatus.Pending)
         {
-            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Pending);
+            throw new InvalidReservationStatusException(Id, Status, ReservationStatus.Pending);
         }
-        ReservationStatus = ReservationStatus.Confirmed;
+        Status = ReservationStatus.Confirmed;
         AddEvent(new ReservationConfirmedEvent(ScreeningId, SeatId, Id));
     }
 
@@ -102,9 +102,9 @@ public class Reservation : AggregateRoot
         {
             throw new ReservationNotOwnedByUserException(Id, userId);
         }
-        if (ReservationStatus != ReservationStatus.Confirmed)
+        if (Status != ReservationStatus.Confirmed)
         {
-            throw new InvalidReservationStatusException(Id, ReservationStatus, ReservationStatus.Confirmed);
+            throw new InvalidReservationStatusException(Id, Status, ReservationStatus.Confirmed);
         }
         if (now > screeningDate)
         {
@@ -116,7 +116,7 @@ public class Reservation : AggregateRoot
         {
             throw new CancellationDeadlinePassedException(Id, cancellationDeadLine, now);
         }
-        ReservationStatus = ReservationStatus.Cancelled;
+        Status = ReservationStatus.Cancelled;
         AddEvent(new ReservationCancelledEvent(ScreeningId, SeatId, Id));
     }
 }
