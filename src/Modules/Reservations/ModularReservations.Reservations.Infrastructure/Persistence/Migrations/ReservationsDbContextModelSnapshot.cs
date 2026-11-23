@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using ModularReservations.Reservations.Infrastructure.ReservationsDbContext;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 
 #nullable disable
 
 namespace ModularReservations.Reservations.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(ReservationsDbContext.ReservationsDbContext))]
+    [DbContext(typeof(ReservationsDbContext))]
     partial class ReservationsDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -34,16 +34,17 @@ namespace ModularReservations.Reservations.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("ReservationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ReservationStatus")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<Guid>("ScreeningId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SeatId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");

@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using ModularReservations.Reservations.Infrastructure.ReservationsDbContext;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 
 #nullable disable
 
 namespace ModularReservations.Reservations.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(ReservationsDbContext.ReservationsDbContext))]
+    [DbContext(typeof(ReservationsDbContext))]
     [Migration("20261120174221_InitialCreate")]
     partial class InitialCreate
     {
