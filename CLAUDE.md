@@ -23,14 +23,14 @@ dotnet test ModularReservations.slnx
 - Solution file: `ModularReservations.slnx`. Sources in `src/`, tests (xUnit) in `tests/`, mirroring `src/` (so far `Reservations.Domain.Tests`).
 - `src/Bootstrapper`: the only Web API host. `Program.cs` registers `TimeProvider.System` (singleton), `IDispatcher` (scoped), controllers (with the module's Api assembly as an application part) and each module through its `Add<Module>(configuration)` extension. Connection strings live in user secrets of the Bootstrapper (`ConnectionStrings:<Module>`). `src/Modules/<Module>`: one module per bounded context, one `csproj` per layer: `Domain`, `Application`, `Infrastructure`, `Api`.
 - `src/Shared` has two projects:
-  - `Shared.Abstraction` (root namespace `ModularReservations.Shared`, no dependencies): `AggregateRoot`, `DomainException`, `AppException`, `ICommand`/`ICommandHandler`, `IEvent`/`IEventHandler`, `IDispatcher`.
+  - `Shared.Abstraction` (root namespace `ModularReservations.Shared`, no dependencies): `AggregateRoot`, `DomainException`, `AppException` (message, or message and `innerException` when wrapping another exception), `ICommand`/`ICommandHandler`, `IEvent`/`IEventHandler`, `IDispatcher`.
   - `Shared.Infrastructure` (→ `Shared.Abstraction`, `Microsoft.Extensions.DependencyInjection.Abstractions`): `Dispatcher`. `SendAsync` resolves exactly one `ICommandHandler<T>`; `PublishAsync` resolves handlers by the event's runtime type (`@event.GetType()`), so publishing from `aggregate.Events` (`IEvent`) works, and awaits them sequentially.
 - Allowed references: Bootstrapper → Api, Infrastructure, Shared.Infrastructure; Api → Application; Application → Domain; Infrastructure → Application, Domain; Domain → Shared.Abstraction; Shared.Infrastructure → Shared.Abstraction. `Shared` references no module. Modules never reference each other; they communicate only through integration events.
 - Modules: `Reservations` (implemented), `Payments` (`Payment`, planned), `Ticketing` (`Ticket`, planned).
 - `Reservations` layers:
   - `Domain`: aggregates `Screening` (with `Seat` entity) and `Reservation`, domain events, exceptions, repository interfaces.
   - `Application`: command handlers (`ReserveSeat`, `ConfirmReservation`, `ExpireReservation`, `CancelReservation`), domain event handlers (`SeatReserved`, `ReservationExpired`, `ReservationCancelled`), `AppException`s (`ReservationNotFound`, `ScreeningNotFound`), `IUnitOfWork`.
-  - `Infrastructure`: `ReservationsDbContext` on SQL Server (schema `reservations`, own migrations history table), entity configurations, migrations, repositories, `UnitOfWork` (the only place that calls `SaveChangesAsync`), `ExpireReservationJob` (`BackgroundService`, every minute, own DI scope per command), registration in `Extensions.AddReservations`.
+  - `Infrastructure`: `ReservationsDbContext` on SQL Server (schema `reservations`, own migrations history table; namespace `DbContextReservations`, since a namespace named like a type breaks the code EF generates for migrations), entity configurations, migrations, repositories, `UnitOfWork` (the only place that calls `SaveChangesAsync`; translates `DbUpdateConcurrencyException` into `ConcurrencyConflictException`, a `sealed` `AppException` in `Infrastructure/Exceptions` with `EntityName`, `EntityId` and the EF exception as `innerException`), `ExpireReservationJob` (`BackgroundService`, every minute, own DI scope per command; `AppException`/`DomainException` logged as warning and skipped), registration in `Extensions.AddReservations`.
   - `Api`: `ReservationsController` (`POST api/reservations` reserves a seat and returns the generated `ReservationId`, `PUT api/reservations/cancel`).
 - Event Storming board (source of truth for flows): https://miro.com/app/board/uXjVEQmpYLs=/ . Cyan stickies are out of scope.
 
@@ -50,13 +50,13 @@ dotnet test ModularReservations.slnx
 - A declined payment does not cancel the reservation (the user can pay again until it expires). Cancelling releases the seat and refunds the payment.
 - `Reservation.Create` rejects a reservation dated in the future or already expired. `Screening.ReserveSeat` validates its own rules (date set and UTC, before the screening starts, non-empty user id, seat exists).
 - The background job runs every minute and loads only `Pending` reservations with `ExpirationDate` earlier than now.
+- Optimistic concurrency uses the field each state change goes through as the token: `Reservation.Status` and `Seat.IsReserved` (`IsConcurrencyToken()`), no `rowversion`. This covers the race between the expiring job and a payment confirming the same reservation.
 - Out of scope: catalog and screening scheduling, user registration, notifications, ticket scanning, ticket annulment after a cancelled reservation.
 
 ## Open items
 
 - What releases a seat when `ReserveSeat` succeeded but `Reservation.Create` failed for another reason.
 - A payment that arrives after the reservation expired (`ConfirmReservation` throws, no path on the board).
-- Race between the expiring job and a payment confirming the same reservation (optimistic concurrency): the job is done (own DI scope per `ExpireReservationCommand`, `AppException`/`DomainException` logged as warning and skipped). Remaining: concurrency token on `Reservation.Status` (`IsConcurrencyToken()`, same approach as `Seat.IsReserved`; no `rowversion`, since every state change goes through `Status`) and translating `DbUpdateConcurrencyException` to an `AppException` in `UnitOfWork` (the only place that calls `SaveChangesAsync`). Until then a conflict is logged as an error, not skipped as a warning.
 - Not decided yet: how `Payment` allows another attempt after `PaymentDeclined`.
 - Outbox + inbox: events are published after saving without an outbox, so a failure after saving loses the event (e.g. `Expired` reservation whose seat is never released). `UnitOfWork` exists and repositories do not call `SaveChanges`. Inbox for idempotency, since `Seat.Release` throws on an already free seat.
 - Not decided yet: whether `ConfirmReservation` takes `now` and rejects calls after `ExpirationDate`.
