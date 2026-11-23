@@ -12,6 +12,7 @@ using ModularReservations.Reservations.Application.Interfaces;
 using ModularReservations.Reservations.Domain.Events.Reservations;
 using ModularReservations.Reservations.Domain.Events.Screenings;
 using ModularReservations.Reservations.Domain.Interfaces.Repositories;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 using ModularReservations.Reservations.Infrastructure.Jobs;
 using ModularReservations.Reservations.Infrastructure.Persistence;
 using ModularReservations.Reservations.Infrastructure.Repositories;
@@ -26,7 +27,7 @@ public static class Extensions
     {
         var connectionString = configuration.GetConnectionString("Reservations");
             /*?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");*/
-        services.AddDbContext<ReservationsDbContext.ReservationsDbContext>(options => options.UseSqlServer(connectionString,
+        services.AddDbContext<ReservationsDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", "reservations")));
         services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
         services.AddScoped<IEventHandler<ReservationExpiredEvent>, ReservationExpiredEventHandler>();
