@@ -2,14 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using ModularReservations.Reservations.Domain.Aggregates;
 using ModularReservations.Reservations.Domain.Interfaces.Repositories;
 using ModularReservations.Reservations.Domain.Statuses;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 
 namespace ModularReservations.Reservations.Infrastructure.Repositories;
 
 public class ReservationRepository : IReservationRepository
 {
-    private readonly ReservationsDbContext.ReservationsDbContext _dbContext;
+    private readonly ReservationsDbContext _dbContext;
 
-    public ReservationRepository(ReservationsDbContext.ReservationsDbContext dbContext)
+    public ReservationRepository(ReservationsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -36,7 +37,7 @@ public class ReservationRepository : IReservationRepository
     {
         return await _dbContext.Reservations
             .AsNoTracking()
-            .Where(x => x.ExpirationDate < now && x.ReservationStatus == ReservationStatus.Pending)
+            .Where(x => x.ExpirationDate < now && x.Status == ReservationStatus.Pending)
             .ToListAsync(cancellationToken);
     }
 }

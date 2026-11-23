@@ -1,14 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using ModularReservations.Reservations.Domain.Aggregates;
 using ModularReservations.Reservations.Domain.Interfaces.Repositories;
+using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 
 namespace ModularReservations.Reservations.Infrastructure.Repositories;
 
 public class ScreeningRepository : IScreeningRepository
 {
-    private readonly ReservationsDbContext.ReservationsDbContext _dbContext;
+    private readonly ReservationsDbContext _dbContext;
 
-    public ScreeningRepository(ReservationsDbContext.ReservationsDbContext dbContext)
+    public ScreeningRepository(ReservationsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
