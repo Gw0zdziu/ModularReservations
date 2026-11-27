@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\ModularReservations.Shared.Infrastructure\ModularReservations.Shared.Infrastructure.csproj" />
       <ProjectReference Include="..\ModularReservations.Reservations.Domain\ModularReservations.Reservations.Domain.csproj" />
         <ProjectReference Include="..\ModularReservations.Reservations.Application\ModularReservations.Reservations.Application.csproj" />
 
@@ -16,6 +17,7 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.15" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.15" />
     </ItemGroup>
 
 </Project>
