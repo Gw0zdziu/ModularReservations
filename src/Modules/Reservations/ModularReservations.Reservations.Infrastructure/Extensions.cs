@@ -16,6 +16,7 @@ using ModularReservations.Reservations.Infrastructure.DbContextReservations;
 using ModularReservations.Reservations.Infrastructure.Jobs;
 using ModularReservations.Reservations.Infrastructure.Persistence;
 using ModularReservations.Reservations.Infrastructure.Repositories;
+using ModularReservations.Shared.Infrastructure.Messaging;
 using ModularReservations.Shared.Interfaces.Command;
 using ModularReservations.Shared.Interfaces.Event;
 
@@ -25,8 +26,9 @@ public static class Extensions
 {
     public static IServiceCollection AddReservations(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Reservations");
-            /*?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");*/
+
+        var connectionString = configuration.GetConnectionString("Reservations")
+            ?? throw new InvalidOperationException("Connection string 'Reservations' is missing.");
         services.AddDbContext<ReservationsDbContext>(options => options.UseSqlServer(connectionString,
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", "reservations")));
         services.AddScoped<IEventHandler<SeatReservedEvent>, SeatReservedEventHandler>();
@@ -40,6 +42,14 @@ public static class Extensions
         services.AddScoped<IScreeningRepository, ScreeningRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddHostedService<ExpireReservationJob>();
+        services.Configure<EventTypeOptions>(options =>
+        {
+            options.Register<SeatReservedEvent>("reservations.seat_reserved");
+            options.Register<SeatReleasedEvent>("reservations.seat_released");
+            options.Register<ReservationExpiredEvent>("reservations.reservation_expired");
+            options.Register<ReservationCancelledEvent>("reservations.reservation_cancelled");
+            options.Register<ReservationConfirmedEvent>("reservations.reservation_confirmed");
+        });
         return services;
     }
 }
