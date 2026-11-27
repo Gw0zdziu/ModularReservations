@@ -70,6 +70,33 @@ namespace ModularReservations.Reservations.Infrastructure.Persistence.Migrations
                     b.ToTable("Screenings", "reservations");
                 });
 
+            modelBuilder.Entity("ModularReservations.Shared.Infrastructure.Messaging.Outbox.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ProcessedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedOn", "OccurredOn");
+
+                    b.ToTable("OutboxMessages", "reservations");
+                });
+
             modelBuilder.Entity("ModularReservations.Reservations.Domain.Aggregates.Screening", b =>
                 {
                     b.OwnsMany("ModularReservations.Reservations.Domain.Entities.Seat", "Seats", b1 =>
